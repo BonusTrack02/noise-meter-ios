@@ -1,0 +1,248 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		200000000000000000000001 /* NoiseMeterApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000001 /* NoiseMeterApp.swift */; };
+		200000000000000000000002 /* NoiseActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000002 /* NoiseActivityAttributes.swift */; };
+		200000000000000000000003 /* MeterFeature.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000003 /* MeterFeature.swift */; };
+		200000000000000000000004 /* LiveActivityClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000004 /* LiveActivityClient.swift */; };
+		200000000000000000000005 /* MeterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000005 /* MeterView.swift */; };
+		200000000000000000000006 /* NoiseMeterLiveActivityBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000006 /* NoiseMeterLiveActivityBundle.swift */; };
+		200000000000000000000007 /* NoiseMeterLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000007 /* NoiseMeterLiveActivity.swift */; };
+		200000000000000000000008 /* NoiseActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000002 /* NoiseActivityAttributes.swift */; };
+		200000000000000000000009 /* MeterReducerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000009 /* MeterReducerTests.swift */; };
+		20000000000000000000000A /* NoiseMeterLiveActivity.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 110000000000000000000002 /* NoiseMeterLiveActivity.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		340000000000000000000002 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 000000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 400000000000000000000002;
+			remoteInfo = NoiseMeterLiveActivity;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		330000000000000000000001 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				20000000000000000000000A /* NoiseMeterLiveActivity.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		100000000000000000000001 /* NoiseMeterApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoiseMeterApp.swift; sourceTree = "<group>"; };
+		100000000000000000000002 /* NoiseActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoiseActivityAttributes.swift; sourceTree = "<group>"; };
+		100000000000000000000003 /* MeterFeature.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeterFeature.swift; sourceTree = "<group>"; };
+		100000000000000000000004 /* LiveActivityClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityClient.swift; sourceTree = "<group>"; };
+		100000000000000000000005 /* MeterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeterView.swift; sourceTree = "<group>"; };
+		100000000000000000000006 /* NoiseMeterLiveActivityBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoiseMeterLiveActivityBundle.swift; sourceTree = "<group>"; };
+		100000000000000000000007 /* NoiseMeterLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoiseMeterLiveActivity.swift; sourceTree = "<group>"; };
+		100000000000000000000008 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		100000000000000000000009 /* MeterReducerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeterReducerTests.swift; sourceTree = "<group>"; };
+		110000000000000000000001 /* NoiseMeter.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NoiseMeter.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		110000000000000000000002 /* NoiseMeterLiveActivity.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = NoiseMeterLiveActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		110000000000000000000003 /* NoiseMeterTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NoiseMeterTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		310000000000000000000001 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		310000000000000000000002 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		310000000000000000000003 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		000000000000000000000010 = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000012 /* NoiseMeter */,
+				000000000000000000000017 /* NoiseMeterLiveActivity */,
+				000000000000000000000018 /* NoiseMeterTests */,
+				000000000000000000000011 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		000000000000000000000011 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				110000000000000000000001 /* NoiseMeter.app */,
+				110000000000000000000002 /* NoiseMeterLiveActivity.appex */,
+				110000000000000000000003 /* NoiseMeterTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		000000000000000000000012 /* NoiseMeter */ = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000013 /* App */,
+				000000000000000000000014 /* Domain */,
+				000000000000000000000015 /* Infrastructure */,
+				000000000000000000000016 /* UI */,
+			);
+			path = NoiseMeter;
+			sourceTree = "<group>";
+		};
+		000000000000000000000013 /* App */ = {isa = PBXGroup; children = (100000000000000000000001 /* NoiseMeterApp.swift */, ); path = App; sourceTree = "<group>"; };
+		000000000000000000000014 /* Domain */ = {isa = PBXGroup; children = (100000000000000000000002 /* NoiseActivityAttributes.swift */, 100000000000000000000003 /* MeterFeature.swift */, ); path = Domain; sourceTree = "<group>"; };
+		000000000000000000000015 /* Infrastructure */ = {isa = PBXGroup; children = (100000000000000000000004 /* LiveActivityClient.swift */, ); path = Infrastructure; sourceTree = "<group>"; };
+		000000000000000000000016 /* UI */ = {isa = PBXGroup; children = (100000000000000000000005 /* MeterView.swift */, ); path = UI; sourceTree = "<group>"; };
+		000000000000000000000017 /* NoiseMeterLiveActivity */ = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000006 /* NoiseMeterLiveActivityBundle.swift */,
+				100000000000000000000007 /* NoiseMeterLiveActivity.swift */,
+				100000000000000000000008 /* Info.plist */,
+			);
+			path = NoiseMeterLiveActivity;
+			sourceTree = "<group>";
+		};
+		000000000000000000000018 /* NoiseMeterTests */ = {
+			isa = PBXGroup;
+			children = (100000000000000000000009 /* MeterReducerTests.swift */, );
+			path = NoiseMeterTests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		400000000000000000000001 /* NoiseMeter */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 600000000000000000000001 /* Build configuration list for PBXNativeTarget "NoiseMeter" */;
+			buildPhases = (
+				300000000000000000000001 /* Sources */,
+				310000000000000000000001 /* Frameworks */,
+				320000000000000000000001 /* Resources */,
+				330000000000000000000001 /* Embed App Extensions */,
+			);
+			buildRules = ();
+			dependencies = (340000000000000000000001 /* PBXTargetDependency */, );
+			name = NoiseMeter;
+			productName = NoiseMeter;
+			productReference = 110000000000000000000001 /* NoiseMeter.app */;
+			productType = "com.apple.product-type.application";
+		};
+		400000000000000000000002 /* NoiseMeterLiveActivity */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 600000000000000000000002 /* Build configuration list for PBXNativeTarget "NoiseMeterLiveActivity" */;
+			buildPhases = (300000000000000000000002 /* Sources */, 310000000000000000000002 /* Frameworks */, 320000000000000000000002 /* Resources */, );
+			buildRules = ();
+			dependencies = ();
+			name = NoiseMeterLiveActivity;
+			productName = NoiseMeterLiveActivity;
+			productReference = 110000000000000000000002 /* NoiseMeterLiveActivity.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		400000000000000000000003 /* NoiseMeterTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 600000000000000000000003 /* Build configuration list for PBXNativeTarget "NoiseMeterTests" */;
+			buildPhases = (300000000000000000000003 /* Sources */, 310000000000000000000003 /* Frameworks */, 320000000000000000000003 /* Resources */, );
+			buildRules = ();
+			dependencies = ();
+			name = NoiseMeterTests;
+			productName = NoiseMeterTests;
+			productReference = 110000000000000000000003 /* NoiseMeterTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		000000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2700;
+				LastUpgradeCheck = 2700;
+				TargetAttributes = {
+					400000000000000000000001 = {CreatedOnToolsVersion = 27.0; };
+					400000000000000000000002 = {CreatedOnToolsVersion = 27.0; };
+					400000000000000000000003 = {CreatedOnToolsVersion = 27.0; TestTargetID = 400000000000000000000001; };
+				};
+			};
+			buildConfigurationList = 600000000000000000000000 /* Build configuration list for PBXProject "NoiseMeter" */;
+			compatibilityVersion = "Xcode 16.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (en, Base, );
+			mainGroup = 000000000000000000000010;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 000000000000000000000011 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				400000000000000000000001 /* NoiseMeter */,
+				400000000000000000000002 /* NoiseMeterLiveActivity */,
+				400000000000000000000003 /* NoiseMeterTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		320000000000000000000001 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		320000000000000000000002 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		320000000000000000000003 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		300000000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				200000000000000000000001 /* NoiseMeterApp.swift in Sources */,
+				200000000000000000000002 /* NoiseActivityAttributes.swift in Sources */,
+				200000000000000000000003 /* MeterFeature.swift in Sources */,
+				200000000000000000000004 /* LiveActivityClient.swift in Sources */,
+				200000000000000000000005 /* MeterView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		300000000000000000000002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				200000000000000000000008 /* NoiseActivityAttributes.swift in Sources */,
+				200000000000000000000006 /* NoiseMeterLiveActivityBundle.swift in Sources */,
+				200000000000000000000007 /* NoiseMeterLiveActivity.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		300000000000000000000003 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (200000000000000000000009 /* MeterReducerTests.swift in Sources */, ); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		340000000000000000000001 /* PBXTargetDependency */ = {isa = PBXTargetDependency; target = 400000000000000000000002 /* NoiseMeterLiveActivity */; targetProxy = 340000000000000000000002 /* PBXContainerItemProxy */; };
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		500000000000000000000001 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; COPY_PHASE_STRIP = NO; DEBUG_INFORMATION_FORMAT = dwarf; ENABLE_TESTABILITY = YES; GCC_C_LANGUAGE_STANDARD = gnu17; GCC_OPTIMIZATION_LEVEL = 0; ONLY_ACTIVE_ARCH = YES; SDKROOT = iphoneos; SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)"; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; }; name = Debug; };
+		500000000000000000000002 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; COPY_PHASE_STRIP = NO; DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym"; ENABLE_NS_ASSERTIONS = NO; GCC_C_LANGUAGE_STANDARD = gnu17; SDKROOT = iphoneos; SWIFT_COMPILATION_MODE = wholemodule; VALIDATE_PRODUCT = YES; }; name = Release; };
+		500000000000000000000011 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; ENABLE_PREVIEWS = YES; GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_CFBundleDisplayName = "Noise Meter"; INFOPLIST_KEY_NSSupportsLiveActivities = YES; IPHONEOS_DEPLOYMENT_TARGET = 18.0; LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", ); MARKETING_VERSION = 0.1.0; PRODUCT_BUNDLE_IDENTIFIER = com.bonustrack.noisemeter; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_STRICT_CONCURRENCY = complete; SWIFT_VERSION = 6.0; TARGETED_DEVICE_FAMILY = 1; }; name = Debug; };
+		500000000000000000000012 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; ENABLE_PREVIEWS = YES; GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_CFBundleDisplayName = "Noise Meter"; INFOPLIST_KEY_NSSupportsLiveActivities = YES; IPHONEOS_DEPLOYMENT_TARGET = 18.0; LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", ); MARKETING_VERSION = 0.1.0; PRODUCT_BUNDLE_IDENTIFIER = com.bonustrack.noisemeter; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_STRICT_CONCURRENCY = complete; SWIFT_VERSION = 6.0; TARGETED_DEVICE_FAMILY = 1; }; name = Release; };
+		500000000000000000000021 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {APPLICATION_EXTENSION_API_ONLY = YES; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = NoiseMeterLiveActivity/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 18.0; LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@executable_path/../../Frameworks", ); MARKETING_VERSION = 0.1.0; PRODUCT_BUNDLE_IDENTIFIER = com.bonustrack.noisemeter.liveactivity; PRODUCT_NAME = "$(TARGET_NAME)"; SKIP_INSTALL = YES; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_STRICT_CONCURRENCY = complete; SWIFT_VERSION = 6.0; TARGETED_DEVICE_FAMILY = 1; }; name = Debug; };
+		500000000000000000000022 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {APPLICATION_EXTENSION_API_ONLY = YES; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = NoiseMeterLiveActivity/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 18.0; LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@executable_path/../../Frameworks", ); MARKETING_VERSION = 0.1.0; PRODUCT_BUNDLE_IDENTIFIER = com.bonustrack.noisemeter.liveactivity; PRODUCT_NAME = "$(TARGET_NAME)"; SKIP_INSTALL = YES; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_STRICT_CONCURRENCY = complete; SWIFT_VERSION = 6.0; TARGETED_DEVICE_FAMILY = 1; }; name = Release; };
+		500000000000000000000031 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {BUNDLE_LOADER = "$(TEST_HOST)"; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 18.0; MARKETING_VERSION = 0.1.0; PRODUCT_BUNDLE_IDENTIFIER = com.bonustrack.noisemeter.tests; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_STRICT_CONCURRENCY = complete; SWIFT_VERSION = 6.0; TARGETED_DEVICE_FAMILY = 1; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NoiseMeter.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NoiseMeter"; }; name = Debug; };
+		500000000000000000000032 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {BUNDLE_LOADER = "$(TEST_HOST)"; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 18.0; MARKETING_VERSION = 0.1.0; PRODUCT_BUNDLE_IDENTIFIER = com.bonustrack.noisemeter.tests; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_STRICT_CONCURRENCY = complete; SWIFT_VERSION = 6.0; TARGETED_DEVICE_FAMILY = 1; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NoiseMeter.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NoiseMeter"; }; name = Release; };
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		600000000000000000000000 /* Build configuration list for PBXProject "NoiseMeter" */ = {isa = XCConfigurationList; buildConfigurations = (500000000000000000000001 /* Debug */, 500000000000000000000002 /* Release */, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		600000000000000000000001 /* Build configuration list for PBXNativeTarget "NoiseMeter" */ = {isa = XCConfigurationList; buildConfigurations = (500000000000000000000011 /* Debug */, 500000000000000000000012 /* Release */, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		600000000000000000000002 /* Build configuration list for PBXNativeTarget "NoiseMeterLiveActivity" */ = {isa = XCConfigurationList; buildConfigurations = (500000000000000000000021 /* Debug */, 500000000000000000000022 /* Release */, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		600000000000000000000003 /* Build configuration list for PBXNativeTarget "NoiseMeterTests" */ = {isa = XCConfigurationList; buildConfigurations = (500000000000000000000031 /* Debug */, 500000000000000000000032 /* Release */, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+/* End XCConfigurationList section */
+	};
+	rootObject = 000000000000000000000001 /* Project object */;
+}
