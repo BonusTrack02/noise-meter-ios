@@ -64,6 +64,9 @@ final class SystemLiveActivityClient: LiveActivityClient {
         } ?? true
 
         if bandChanged || canUpdateNow {
+            pendingUpdateTask?.cancel()
+            pendingUpdateTask = nil
+            pendingReading = nil
             await flush(reading)
             return
         }
@@ -71,8 +74,11 @@ final class SystemLiveActivityClient: LiveActivityClient {
         pendingReading = reading
         guard pendingUpdateTask == nil else { return }
 
-        pendingUpdateTask = Task { [weak self, updateInterval] in
-            try? await Task.sleep(for: updateInterval)
+        let elapsed = lastUpdate?.duration(to: clock.now) ?? .zero
+        let remainingDelay = updateInterval - elapsed
+
+        pendingUpdateTask = Task { [weak self] in
+            try? await Task.sleep(for: remainingDelay)
             guard !Task.isCancelled else { return }
             await self?.flushPendingReading()
         }

@@ -27,6 +27,13 @@
 			remoteGlobalIDString = 400000000000000000000002;
 			remoteInfo = NoiseMeterLiveActivity;
 		};
+		340000000000000000000004 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 000000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 400000000000000000000001;
+			remoteInfo = NoiseMeter;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -151,7 +158,7 @@
 			buildConfigurationList = 600000000000000000000003 /* Build configuration list for PBXNativeTarget "NoiseMeterTests" */;
 			buildPhases = (300000000000000000000003 /* Sources */, 310000000000000000000003 /* Frameworks */, 320000000000000000000003 /* Resources */, );
 			buildRules = ();
-			dependencies = ();
+			dependencies = (340000000000000000000003 /* PBXTargetDependency */, );
 			name = NoiseMeterTests;
 			productName = NoiseMeterTests;
 			productReference = 110000000000000000000003 /* NoiseMeterTests.xctest */;
@@ -224,6 +231,7 @@
 
 /* Begin PBXTargetDependency section */
 		340000000000000000000001 /* PBXTargetDependency */ = {isa = PBXTargetDependency; target = 400000000000000000000002 /* NoiseMeterLiveActivity */; targetProxy = 340000000000000000000002 /* PBXContainerItemProxy */; };
+		340000000000000000000003 /* PBXTargetDependency */ = {isa = PBXTargetDependency; target = 400000000000000000000001 /* NoiseMeter */; targetProxy = 340000000000000000000004 /* PBXContainerItemProxy */; };
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
