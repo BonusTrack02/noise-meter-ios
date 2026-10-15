@@ -172,9 +172,14 @@ final class MeterStore {
     private(set) var state = MeterState()
 
     private let liveActivity: any LiveActivityClient
+    private let microphonePermission: any MicrophonePermissionClient
 
-    init(liveActivity: any LiveActivityClient) {
+    init(
+        liveActivity: any LiveActivityClient,
+        microphonePermission: any MicrophonePermissionClient
+    ) {
         self.liveActivity = liveActivity
+        self.microphonePermission = microphonePermission
     }
 
     func send(_ action: MeterAction) async {
@@ -183,6 +188,13 @@ final class MeterStore {
         switch effect {
         case .none:
             break
+
+        case .requestMicrophonePermission:
+            let permission = await microphonePermission.requestAuthorization()
+            await send(.microphonePermissionUpdated(permission))
+
+        case .openApplicationSettings:
+            await microphonePermission.openSettings()
 
         case let .startLiveActivity(reading):
             do {
@@ -202,7 +214,12 @@ final class MeterStore {
     }
 
     func synchronize() async {
-        await send(.appeared(isLiveActivityRunning: liveActivity.isRunning))
+        await send(
+            .appeared(
+                isLiveActivityRunning: liveActivity.isRunning,
+                microphonePermission: microphonePermission.authorizationStatus
+            )
+        )
     }
 }
 

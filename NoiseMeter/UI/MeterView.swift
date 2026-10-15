@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct MeterView: View {
+    @Environment(\.scenePhase) private var scenePhase
+
     let store: MeterStore
 
     var body: some View {
@@ -8,6 +10,7 @@ struct MeterView: View {
             ScrollView {
                 VStack(spacing: 28) {
                     readingCard
+                    measurementControl
                     previewControl
                     liveActivityControl
                 }
@@ -18,6 +21,30 @@ struct MeterView: View {
         }
         .task {
             await store.synchronize()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            guard newPhase == .active else { return }
+
+            Task {
+                await store.synchronize()
+            }
+        }
+        .alert(
+            "마이크 권한이 필요합니다",
+            isPresented: Binding(
+                get: { store.state.isMicrophoneSettingsAlertPresented },
+                set: { isPresented in
+                    guard !isPresented else { return }
+                    Task { await store.send(.microphoneSettingsAlertDismissed) }
+                }
+            )
+        ) {
+            Button("취소", role: .cancel) {}
+            Button("설정 열기") {
+                Task { await store.send(.openApplicationSettingsButtonTapped) }
+            }
+        } message: {
+            Text("소음 측정을 시작하려면 설정에서 마이크 접근을 허용해 주세요.")
         }
     }
 
@@ -81,6 +108,19 @@ struct MeterView: View {
         .background(.background, in: .rect(cornerRadius: 20))
     }
 
+    private var measurementControl: some View {
+        Button {
+            Task { await store.send(.measurementButtonTapped) }
+        } label: {
+            Label(measurementButtonTitle, systemImage: measurementButtonSymbol)
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.borderedProminent)
+        .controlSize(.large)
+        .tint(store.state.isMeasuring ? .red : .accentColor)
+        .disabled(store.state.isRequestingMicrophonePermission)
+    }
+
     private var liveActivityControl: some View {
         VStack(spacing: 12) {
             Button {
@@ -122,10 +162,29 @@ struct MeterView: View {
         case .loud: .red
         }
     }
+
+    private var measurementButtonTitle: String {
+        if store.state.isRequestingMicrophonePermission {
+            return "권한 확인 중"
+        }
+        return store.state.isMeasuring ? "측정 중지" : "측정 시작"
+    }
+
+    private var measurementButtonSymbol: String {
+        if store.state.isRequestingMicrophonePermission {
+            return "ellipsis"
+        }
+        return store.state.isMeasuring ? "stop.circle.fill" : "mic.fill"
+    }
 }
 
 #Preview {
-    MeterView(store: MeterStore(liveActivity: PreviewLiveActivityClient()))
+    MeterView(
+        store: MeterStore(
+            liveActivity: PreviewLiveActivityClient(),
+            microphonePermission: PreviewMicrophonePermissionClient()
+        )
+    )
 }
 
 @MainActor
@@ -141,5 +200,17 @@ private final class PreviewLiveActivityClient: LiveActivityClient {
     func end() async {
         isRunning = false
     }
+}
+
+@MainActor
+private final class PreviewMicrophonePermissionClient: MicrophonePermissionClient {
+    var authorizationStatus: MicrophonePermission = .undetermined
+
+    func requestAuthorization() async -> MicrophonePermission {
+        authorizationStatus = .granted
+        return authorizationStatus
+    }
+
+    func openSettings() async {}
 }
 

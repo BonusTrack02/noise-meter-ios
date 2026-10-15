@@ -2,12 +2,29 @@ import Foundation
 
 struct MeterState: Equatable, Sendable {
     var reading = NoiseReading.preview
+    var isMeasuring = false
     var isLiveActivityRunning = false
+    var microphonePermission: MicrophonePermission = .undetermined
+    var isRequestingMicrophonePermission = false
+    var isMicrophoneSettingsAlertPresented = false
     var errorMessage: String?
 }
 
+enum MicrophonePermission: Equatable, Sendable {
+    case undetermined
+    case denied
+    case granted
+}
+
 enum MeterAction: Equatable, Sendable {
-    case appeared(isLiveActivityRunning: Bool)
+    case appeared(
+        isLiveActivityRunning: Bool,
+        microphonePermission: MicrophonePermission
+    )
+    case measurementButtonTapped
+    case microphonePermissionUpdated(MicrophonePermission)
+    case microphoneSettingsAlertDismissed
+    case openApplicationSettingsButtonTapped
     case previewLevelChanged(Double)
     case liveActivityButtonTapped
     case liveActivityStarted
@@ -17,6 +34,8 @@ enum MeterAction: Equatable, Sendable {
 
 enum MeterEffect: Equatable, Sendable {
     case none
+    case requestMicrophonePermission
+    case openApplicationSettings
     case startLiveActivity(NoiseReading)
     case updateLiveActivity(NoiseReading)
     case endLiveActivity
@@ -25,9 +44,47 @@ enum MeterEffect: Equatable, Sendable {
 enum MeterReducer {
     static func reduce(state: inout MeterState, action: MeterAction) -> MeterEffect {
         switch action {
-        case let .appeared(isRunning):
+        case let .appeared(isRunning, microphonePermission):
             state.isLiveActivityRunning = isRunning
+            state.microphonePermission = microphonePermission
+            state.isRequestingMicrophonePermission = false
+            if microphonePermission != .granted {
+                state.isMeasuring = false
+            }
             return .none
+
+        case .measurementButtonTapped:
+            if state.isMeasuring {
+                state.isMeasuring = false
+                return .none
+            }
+
+            switch state.microphonePermission {
+            case .undetermined:
+                state.isRequestingMicrophonePermission = true
+                return .requestMicrophonePermission
+            case .denied:
+                state.isMicrophoneSettingsAlertPresented = true
+                return .none
+            case .granted:
+                state.isMeasuring = true
+                return .none
+            }
+
+        case let .microphonePermissionUpdated(permission):
+            state.microphonePermission = permission
+            state.isRequestingMicrophonePermission = false
+            state.isMeasuring = permission == .granted
+            state.isMicrophoneSettingsAlertPresented = permission == .denied
+            return .none
+
+        case .microphoneSettingsAlertDismissed:
+            state.isMicrophoneSettingsAlertPresented = false
+            return .none
+
+        case .openApplicationSettingsButtonTapped:
+            state.isMicrophoneSettingsAlertPresented = false
+            return .openApplicationSettings
 
         case let .previewLevelChanged(value):
             let previousBand = state.reading.band
