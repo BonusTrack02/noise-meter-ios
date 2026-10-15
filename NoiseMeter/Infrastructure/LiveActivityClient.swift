@@ -16,7 +16,7 @@ final class SystemLiveActivityClient: LiveActivityClient {
     private let updateInterval: Duration
     private let clock = ContinuousClock()
 
-    private var activity: Activity<NoiseActivityAttributes>?
+    private var activityID: String?
     private var lastUpdate: ContinuousClock.Instant?
     private var lastBand: NoiseBand?
     private var pendingReading: NoiseReading?
@@ -24,11 +24,11 @@ final class SystemLiveActivityClient: LiveActivityClient {
 
     init(updateInterval: Duration = .seconds(3)) {
         self.updateInterval = updateInterval
-        activity = Activity<NoiseActivityAttributes>.activities.first
+        activityID = Activity<NoiseActivityAttributes>.activities.first?.id
     }
 
     var isRunning: Bool {
-        activity != nil
+        activityID != nil
     }
 
     func start(reading: NoiseReading) async throws {
@@ -36,9 +36,14 @@ final class SystemLiveActivityClient: LiveActivityClient {
             throw LiveActivityError.disabled
         }
 
-        if let activity {
-            await activity.update(content(for: reading))
-            return
+        if let activityID {
+            if await Self.updateActivity(id: activityID, reading: reading) {
+                lastUpdate = clock.now
+                lastBand = reading.band
+                return
+            }
+
+            self.activityID = nil
         }
 
         let attributes = NoiseActivityAttributes(
@@ -46,17 +51,18 @@ final class SystemLiveActivityClient: LiveActivityClient {
             title: "차량 실내 소음"
         )
 
-        activity = try Activity.request(
+        let activity = try Activity.request(
             attributes: attributes,
             content: content(for: reading),
             pushType: nil
         )
+        activityID = activity.id
         lastUpdate = clock.now
         lastBand = reading.band
     }
 
     func update(reading: NoiseReading) async {
-        guard activity != nil else { return }
+        guard activityID != nil else { return }
 
         let bandChanged = lastBand != reading.band
         let canUpdateNow = lastUpdate.map {
@@ -89,10 +95,10 @@ final class SystemLiveActivityClient: LiveActivityClient {
         pendingUpdateTask = nil
         pendingReading = nil
 
-        guard let activity else { return }
-        await activity.end(nil, dismissalPolicy: .immediate)
+        guard let activityID else { return }
+        await Self.endActivity(id: activityID)
 
-        self.activity = nil
+        self.activityID = nil
         lastUpdate = nil
         lastBand = nil
     }
@@ -105,10 +111,40 @@ final class SystemLiveActivityClient: LiveActivityClient {
     }
 
     private func flush(_ reading: NoiseReading) async {
-        guard let activity else { return }
-        await activity.update(content(for: reading))
+        guard let activityID else { return }
+        guard await Self.updateActivity(id: activityID, reading: reading) else {
+            self.activityID = nil
+            lastUpdate = nil
+            lastBand = nil
+            return
+        }
+
         lastUpdate = clock.now
         lastBand = reading.band
+    }
+
+    private nonisolated static func updateActivity(
+        id: String,
+        reading: NoiseReading
+    ) async -> Bool {
+        guard let activity = Activity<NoiseActivityAttributes>.activities.first(where: { $0.id == id }) else {
+            return false
+        }
+
+        let content = ActivityContent(
+            state: NoiseActivityAttributes.ContentState(reading: reading),
+            staleDate: .now.addingTimeInterval(10)
+        )
+        await activity.update(content)
+        return true
+    }
+
+    private nonisolated static func endActivity(id: String) async {
+        guard let activity = Activity<NoiseActivityAttributes>.activities.first(where: { $0.id == id }) else {
+            return
+        }
+
+        await activity.end(nil, dismissalPolicy: .immediate)
     }
 
     private func content(for reading: NoiseReading) -> ActivityContent<NoiseActivityAttributes.ContentState> {
