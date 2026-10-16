@@ -61,11 +61,12 @@ struct NoiseReading: Codable, Equatable, Sendable {
     private static let slowTimeConstant: TimeInterval = 1
 
     let current: Double
+    let minimum: Double
     let laeq: Double
     let peak: Double
 
-    static let zero = NoiseReading(current: 0, laeq: 0, peak: 0)
-    static let preview = NoiseReading(current: 72, laeq: 69, peak: 81)
+    static let zero = NoiseReading(current: 0, minimum: 0, laeq: 0, peak: 0)
+    static let preview = NoiseReading(current: 72, minimum: 54, laeq: 69, peak: 81)
 
     var band: NoiseBand {
         NoiseBand(decibels: current)
@@ -80,6 +81,7 @@ struct NoiseReading: Codable, Equatable, Sendable {
         guard previousSampleCount > 0 else {
             return NoiseReading(
                 current: boundedValue,
+                minimum: boundedValue,
                 laeq: laeq,
                 peak: boundedValue
             )
@@ -90,6 +92,7 @@ struct NoiseReading: Codable, Equatable, Sendable {
                 toward: boundedValue,
                 sampleDuration: sample.duration
             ),
+            minimum: min(minimum, boundedValue),
             laeq: laeq,
             peak: max(peak, boundedValue)
         )

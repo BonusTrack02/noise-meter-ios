@@ -67,9 +67,11 @@ struct MeterView: View {
                 .foregroundStyle(measurementStatusColor)
 
             HStack {
+                metric(title: "최소 dBA", value: store.state.reading.minimum)
+                Divider()
                 metric(title: "LAeq", value: store.state.reading.laeq)
                 Divider()
-                metric(title: "최대", value: store.state.reading.peak)
+                metric(title: "최대 dBA", value: store.state.reading.peak)
             }
             .frame(height: 48)
 
@@ -165,6 +167,9 @@ struct MeterView: View {
         if store.state.isStartingMeasurement {
             return "측정 준비 중"
         }
+        if store.state.isStoppingMeasurement {
+            return "측정 종료 중"
+        }
         return store.state.isMeasuring ? "측정 중지" : "측정 시작"
     }
 
@@ -179,7 +184,9 @@ struct MeterView: View {
     }
 
     private var isMeasurementControlBusy: Bool {
-        store.state.isRequestingMicrophonePermission || store.state.isStartingMeasurement
+        store.state.isRequestingMicrophonePermission
+            || store.state.isStartingMeasurement
+            || store.state.isStoppingMeasurement
     }
 
     private var currentReadingText: String {

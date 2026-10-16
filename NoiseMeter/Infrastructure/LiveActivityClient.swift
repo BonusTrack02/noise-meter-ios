@@ -171,19 +171,30 @@ enum LiveActivityError: LocalizedError {
 final class MeterStore {
     private(set) var state = MeterState()
 
+    private let measurementDisplayInterval: TimeInterval
     private let liveActivity: any LiveActivityClient
     private let microphonePermission: any MicrophonePermissionClient
     private let microphoneMeter: any MicrophoneMeterClient
+    @ObservationIgnored
+    private var measurementProcessor = NoiseMeasurementProcessor()
+    @ObservationIgnored
+    private var measurementDisplayCadence: MeasurementDisplayCadence
+    @ObservationIgnored
     private var measurementTask: Task<Void, Never>?
 
     init(
         liveActivity: any LiveActivityClient,
         microphonePermission: any MicrophonePermissionClient,
-        microphoneMeter: any MicrophoneMeterClient
+        microphoneMeter: any MicrophoneMeterClient,
+        measurementDisplayInterval: TimeInterval = MeasurementDisplayCadence.defaultInterval
     ) {
+        self.measurementDisplayInterval = measurementDisplayInterval
         self.liveActivity = liveActivity
         self.microphonePermission = microphonePermission
         self.microphoneMeter = microphoneMeter
+        measurementDisplayCadence = MeasurementDisplayCadence(
+            interval: measurementDisplayInterval
+        )
     }
 
     func send(_ action: MeterAction) async {
@@ -203,15 +214,18 @@ final class MeterStore {
         case .startMeasurement:
             do {
                 let measurements = try await microphoneMeter.start()
+                resetMeasurementProcessing()
                 await send(.measurementStarted)
 
                 measurementTask?.cancel()
                 measurementTask = Task { [weak self] in
                     for await sample in measurements {
                         guard !Task.isCancelled else { break }
-                        await self?.send(.measurementReceived(sample))
+                        await self?.processMeasurement(sample)
                     }
 
+                    guard !Task.isCancelled else { return }
+                    await self?.publishLatestMeasurement()
                     guard !Task.isCancelled else { return }
                     await self?.send(.measurementStopped)
                 }
@@ -223,6 +237,7 @@ final class MeterStore {
         case let .stopMeasurement(endLiveActivity):
             measurementTask?.cancel()
             measurementTask = nil
+            await publishLatestMeasurement()
             await microphoneMeter.stop()
             await send(.measurementStopped)
 
@@ -253,6 +268,42 @@ final class MeterStore {
             .appeared(
                 isLiveActivityRunning: liveActivity.isRunning,
                 microphonePermission: microphonePermission.authorizationStatus
+            )
+        )
+    }
+
+    private func resetMeasurementProcessing() {
+        measurementProcessor = NoiseMeasurementProcessor()
+        measurementDisplayCadence = MeasurementDisplayCadence(
+            interval: measurementDisplayInterval
+        )
+    }
+
+    private func processMeasurement(_ sample: SoundLevelSample) async {
+        guard let reading = measurementProcessor.process(sample) else { return }
+        guard measurementDisplayCadence.shouldPublish(
+            at: measurementProcessor.measuredDuration
+        ) else {
+            return
+        }
+
+        await send(
+            .measurementUpdated(
+                reading: reading,
+                sampleCount: measurementProcessor.sampleCount
+            )
+        )
+    }
+
+    private func publishLatestMeasurement() async {
+        guard measurementProcessor.sampleCount > state.measurementSampleCount else {
+            return
+        }
+
+        await send(
+            .measurementUpdated(
+                reading: measurementProcessor.reading,
+                sampleCount: measurementProcessor.sampleCount
             )
         )
     }

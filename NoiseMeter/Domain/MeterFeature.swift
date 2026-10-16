@@ -1,11 +1,59 @@
 import Foundation
 
+struct NoiseMeasurementProcessor: Equatable, Sendable {
+    private(set) var reading = NoiseReading.zero
+    private(set) var sampleCount = 0
+    private var laeqAccumulator = LAeqAccumulator()
+
+    var measuredDuration: TimeInterval {
+        laeqAccumulator.measuredDuration
+    }
+
+    @discardableResult
+    mutating func process(_ sample: SoundLevelSample) -> NoiseReading? {
+        guard let laeq = laeqAccumulator.add(sample) else { return nil }
+        reading = reading.addingMeasurement(
+            sample,
+            previousSampleCount: sampleCount,
+            laeq: laeq
+        )
+        sampleCount += 1
+        return reading
+    }
+}
+
+struct MeasurementDisplayCadence: Equatable, Sendable {
+    static let defaultInterval: TimeInterval = 0.1
+
+    private let interval: TimeInterval
+    private var nextUpdateTime: TimeInterval = 0
+
+    init(interval: TimeInterval = Self.defaultInterval) {
+        self.interval = interval.isFinite && interval > 0
+            ? interval
+            : Self.defaultInterval
+    }
+
+    mutating func shouldPublish(at measuredDuration: TimeInterval) -> Bool {
+        guard measuredDuration.isFinite,
+              measuredDuration >= nextUpdateTime
+        else {
+            return false
+        }
+
+        repeat {
+            nextUpdateTime += interval
+        } while nextUpdateTime <= measuredDuration
+        return true
+    }
+}
+
 struct MeterState: Equatable, Sendable {
     var reading = NoiseReading.zero
-    var laeqAccumulator = LAeqAccumulator()
     var measurementSampleCount = 0
     var isMeasuring = false
     var isStartingMeasurement = false
+    var isStoppingMeasurement = false
     var isMeasurementStartPending = false
     var isLiveActivityRunning = false
     var microphonePermission: MicrophonePermission = .undetermined
@@ -32,7 +80,7 @@ enum MeterAction: Equatable, Sendable {
     case openApplicationSettingsButtonTapped
     case measurementStarted
     case measurementStopped
-    case measurementReceived(SoundLevelSample)
+    case measurementUpdated(reading: NoiseReading, sampleCount: Int)
     case measurementFailed(String)
     case liveActivityButtonTapped
     case liveActivityStarted
@@ -61,6 +109,7 @@ enum MeterReducer {
                 let shouldStopMeasurement = state.isMeasuring || state.isStartingMeasurement
                 state.isMeasuring = false
                 state.isStartingMeasurement = false
+                state.isStoppingMeasurement = false
                 return shouldStopMeasurement
                     ? .stopMeasurement(endLiveActivity: state.isLiveActivityRunning)
                     : .none
@@ -69,7 +118,8 @@ enum MeterReducer {
 
         case .measurementButtonTapped:
             if state.isMeasuring {
-                state.isMeasuring = false
+                guard !state.isStoppingMeasurement else { return .none }
+                state.isStoppingMeasurement = true
                 return .stopMeasurement(endLiveActivity: state.isLiveActivityRunning)
             }
 
@@ -117,31 +167,28 @@ enum MeterReducer {
 
         case .measurementStarted:
             state.reading = .zero
-            state.laeqAccumulator = LAeqAccumulator()
             state.measurementSampleCount = 0
             state.isStartingMeasurement = false
+            state.isStoppingMeasurement = false
             state.isMeasuring = true
             return .none
 
         case .measurementStopped:
             state.isStartingMeasurement = false
+            state.isStoppingMeasurement = false
             state.isMeasuring = false
             return .none
 
-        case let .measurementReceived(sample):
+        case let .measurementUpdated(reading, sampleCount):
             guard state.isMeasuring else { return .none }
-            guard let laeq = state.laeqAccumulator.add(sample) else { return .none }
-            state.reading = state.reading.addingMeasurement(
-                sample,
-                previousSampleCount: state.measurementSampleCount,
-                laeq: laeq
-            )
-            state.measurementSampleCount += 1
+            state.reading = reading
+            state.measurementSampleCount = sampleCount
             guard state.isLiveActivityRunning else { return .none }
             return .updateLiveActivity(state.reading)
 
         case let .measurementFailed(message):
             state.isStartingMeasurement = false
+            state.isStoppingMeasurement = false
             state.isMeasuring = false
             state.measurementErrorMessage = message
             return .none

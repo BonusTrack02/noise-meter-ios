@@ -106,8 +106,25 @@ struct MeterReducerTests {
             action: .measurementButtonTapped
         )
 
-        #expect(!state.isMeasuring)
+        #expect(state.isMeasuring)
+        #expect(state.isStoppingMeasurement)
         #expect(effect == .stopMeasurement(endLiveActivity: false))
+    }
+
+    @Test
+    func repeatedStopRequestIsIgnored() {
+        var state = MeterState(
+            isMeasuring: true,
+            isStoppingMeasurement: true,
+            microphonePermission: .granted
+        )
+
+        let effect = MeterReducer.reduce(
+            state: &state,
+            action: .measurementButtonTapped
+        )
+
+        #expect(effect == .none)
     }
 
     @Test
@@ -128,11 +145,8 @@ struct MeterReducerTests {
 
     @Test
     func startingMeasurementResetsPreviousReadings() {
-        var accumulator = LAeqAccumulator()
-        _ = accumulator.add(SoundLevelSample(decibelsA: 74, duration: 2))
         var state = MeterState(
             reading: .preview,
-            laeqAccumulator: accumulator,
             measurementSampleCount: 10,
             isStartingMeasurement: true,
             microphonePermission: .granted
@@ -144,8 +158,6 @@ struct MeterReducerTests {
         )
 
         #expect(state.reading == .zero)
-        #expect(state.laeqAccumulator.measuredDuration == 0)
-        #expect(state.laeqAccumulator.energyExposure == 0)
         #expect(state.measurementSampleCount == 0)
         #expect(state.isMeasuring)
         #expect(!state.isStartingMeasurement)
@@ -161,44 +173,51 @@ struct MeterReducerTests {
 
         let effect = MeterReducer.reduce(
             state: &state,
-            action: .measurementReceived(
-                SoundLevelSample(decibelsA: 68, duration: 0.1)
+            action: .measurementUpdated(
+                reading: NoiseReading(
+                    current: 68,
+                    minimum: 62,
+                    laeq: 68,
+                    peak: 74
+                ),
+                sampleCount: 1
             )
         )
 
-        #expect(state.reading == NoiseReading(current: 68, laeq: 68, peak: 68))
+        #expect(
+            state.reading == NoiseReading(
+                current: 68,
+                minimum: 62,
+                laeq: 68,
+                peak: 74
+            )
+        )
         #expect(state.measurementSampleCount == 1)
         #expect(effect == .none)
     }
 
     @Test
-    func receivingMultipleMeasurementsTracksLAeqAndPeak() {
-        var state = MeterState(
-            isMeasuring: true,
-            microphonePermission: .granted
-        )
+    func processingMultipleMeasurementsTracksMinimumLAeqAndPeak() throws {
+        var processor = NoiseMeasurementProcessor()
 
-        _ = MeterReducer.reduce(
-            state: &state,
-            action: .measurementReceived(
-                SoundLevelSample(decibelsA: 60, duration: 0.1)
-            )
+        _ = processor.process(
+            SoundLevelSample(decibelsA: 60, duration: 0.1)
         )
-        _ = MeterReducer.reduce(
-            state: &state,
-            action: .measurementReceived(
-                SoundLevelSample(decibelsA: 80, duration: 1)
-            )
+        let updatedReading = processor.process(
+            SoundLevelSample(decibelsA: 80, duration: 1)
         )
+        let reading = try #require(updatedReading)
 
         let expectedCurrent = 60 + ((1 - exp(-1.0)) * 20)
         let expectedLAeq = 10 * log10(
             ((pow(10, 6) * 0.1) + (pow(10, 8) * 1)) / 1.1
         )
-        #expect(abs(state.reading.current - expectedCurrent) < 0.001)
-        #expect(abs(state.reading.laeq - expectedLAeq) < 0.001)
-        #expect(state.reading.peak == 80)
-        #expect(state.measurementSampleCount == 2)
+        #expect(abs(reading.current - expectedCurrent) < 0.001)
+        #expect(reading.minimum == 60)
+        #expect(abs(reading.laeq - expectedLAeq) < 0.001)
+        #expect(reading.peak == 80)
+        #expect(processor.sampleCount == 2)
+        #expect(abs(processor.measuredDuration - 1.1) < 0.001)
     }
 
     @Test
@@ -236,14 +255,41 @@ struct MeterReducerTests {
 
         let effect = MeterReducer.reduce(
             state: &state,
-            action: .measurementReceived(
-                SoundLevelSample(decibelsA: 86, duration: 0.1)
+            action: .measurementUpdated(
+                reading: NoiseReading(
+                    current: 86,
+                    minimum: 64,
+                    laeq: 82,
+                    peak: 90
+                ),
+                sampleCount: 12
             )
         )
 
         #expect(state.reading.current == 86)
         #expect(state.reading.band == .loud)
         #expect(effect == .updateLiveActivity(state.reading))
+    }
+
+    @Test
+    func displayCadencePublishesTenTimesPerSecond() {
+        var cadence = MeasurementDisplayCadence()
+
+        let firstBuffer = cadence.shouldPublish(at: 0.085)
+        let beforeOneTenth = cadence.shouldPublish(at: 0.099)
+        let firstTenth = cadence.shouldPublish(at: 0.17)
+        let beforeTwoTenths = cadence.shouldPublish(at: 0.199)
+        let twoTenths = cadence.shouldPublish(at: 0.256)
+        let beforeThreeTenths = cadence.shouldPublish(at: 0.299)
+        let threeTenths = cadence.shouldPublish(at: 0.341)
+
+        #expect(firstBuffer)
+        #expect(!beforeOneTenth)
+        #expect(firstTenth)
+        #expect(!beforeTwoTenths)
+        #expect(twoTenths)
+        #expect(!beforeThreeTenths)
+        #expect(threeTenths)
     }
 
     @Test
