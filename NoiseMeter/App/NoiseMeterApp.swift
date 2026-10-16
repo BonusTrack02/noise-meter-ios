@@ -4,7 +4,8 @@ import SwiftUI
 struct NoiseMeterApp: App {
     @State private var store = MeterStore(
         liveActivity: SystemLiveActivityClient(),
-        microphonePermission: SystemMicrophonePermissionClient()
+        microphonePermission: SystemMicrophonePermissionClient(),
+        microphoneMeter: SystemMicrophoneMeterClient()
     )
 
     var body: some Scene {

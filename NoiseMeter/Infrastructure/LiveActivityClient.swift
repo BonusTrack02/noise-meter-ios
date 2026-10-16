@@ -173,13 +173,17 @@ final class MeterStore {
 
     private let liveActivity: any LiveActivityClient
     private let microphonePermission: any MicrophonePermissionClient
+    private let microphoneMeter: any MicrophoneMeterClient
+    private var measurementTask: Task<Void, Never>?
 
     init(
         liveActivity: any LiveActivityClient,
-        microphonePermission: any MicrophonePermissionClient
+        microphonePermission: any MicrophonePermissionClient,
+        microphoneMeter: any MicrophoneMeterClient
     ) {
         self.liveActivity = liveActivity
         self.microphonePermission = microphonePermission
+        self.microphoneMeter = microphoneMeter
     }
 
     func send(_ action: MeterAction) async {
@@ -195,6 +199,37 @@ final class MeterStore {
 
         case .openApplicationSettings:
             await microphonePermission.openSettings()
+
+        case .startMeasurement:
+            do {
+                let measurements = try await microphoneMeter.start()
+                await send(.measurementStarted)
+
+                measurementTask?.cancel()
+                measurementTask = Task { [weak self] in
+                    for await decibels in measurements {
+                        guard !Task.isCancelled else { break }
+                        await self?.send(.measurementReceived(decibels))
+                    }
+
+                    guard !Task.isCancelled else { return }
+                    await self?.send(.measurementStopped)
+                }
+            } catch {
+                await microphoneMeter.stop()
+                await send(.measurementFailed(error.localizedDescription))
+            }
+
+        case let .stopMeasurement(endLiveActivity):
+            measurementTask?.cancel()
+            measurementTask = nil
+            await microphoneMeter.stop()
+            await send(.measurementStopped)
+
+            if endLiveActivity {
+                await liveActivity.end()
+                await send(.liveActivityEnded)
+            }
 
         case let .startLiveActivity(reading):
             do {

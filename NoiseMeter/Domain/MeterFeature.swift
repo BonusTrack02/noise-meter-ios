@@ -1,12 +1,16 @@
 import Foundation
 
 struct MeterState: Equatable, Sendable {
-    var reading = NoiseReading.preview
+    var reading = NoiseReading.zero
+    var measurementSampleCount = 0
     var isMeasuring = false
+    var isStartingMeasurement = false
+    var isMeasurementStartPending = false
     var isLiveActivityRunning = false
     var microphonePermission: MicrophonePermission = .undetermined
     var isRequestingMicrophonePermission = false
     var isMicrophoneSettingsAlertPresented = false
+    var measurementErrorMessage: String?
     var errorMessage: String?
 }
 
@@ -25,7 +29,10 @@ enum MeterAction: Equatable, Sendable {
     case microphonePermissionUpdated(MicrophonePermission)
     case microphoneSettingsAlertDismissed
     case openApplicationSettingsButtonTapped
-    case previewLevelChanged(Double)
+    case measurementStarted
+    case measurementStopped
+    case measurementReceived(Double)
+    case measurementFailed(String)
     case liveActivityButtonTapped
     case liveActivityStarted
     case liveActivityEnded
@@ -36,6 +43,8 @@ enum MeterEffect: Equatable, Sendable {
     case none
     case requestMicrophonePermission
     case openApplicationSettings
+    case startMeasurement
+    case stopMeasurement(endLiveActivity: Bool)
     case startLiveActivity(NoiseReading)
     case updateLiveActivity(NoiseReading)
     case endLiveActivity
@@ -47,34 +56,53 @@ enum MeterReducer {
         case let .appeared(isRunning, microphonePermission):
             state.isLiveActivityRunning = isRunning
             state.microphonePermission = microphonePermission
-            state.isRequestingMicrophonePermission = false
             if microphonePermission != .granted {
+                let shouldStopMeasurement = state.isMeasuring || state.isStartingMeasurement
                 state.isMeasuring = false
+                state.isStartingMeasurement = false
+                return shouldStopMeasurement
+                    ? .stopMeasurement(endLiveActivity: state.isLiveActivityRunning)
+                    : .none
             }
             return .none
 
         case .measurementButtonTapped:
             if state.isMeasuring {
                 state.isMeasuring = false
-                return .none
+                return .stopMeasurement(endLiveActivity: state.isLiveActivityRunning)
             }
+
+            guard !state.isStartingMeasurement,
+                  !state.isRequestingMicrophonePermission
+            else { return .none }
+
+            state.measurementErrorMessage = nil
 
             switch state.microphonePermission {
             case .undetermined:
+                state.isMeasurementStartPending = true
                 state.isRequestingMicrophonePermission = true
                 return .requestMicrophonePermission
             case .denied:
                 state.isMicrophoneSettingsAlertPresented = true
                 return .none
             case .granted:
-                state.isMeasuring = true
-                return .none
+                state.isStartingMeasurement = true
+                return .startMeasurement
             }
 
         case let .microphonePermissionUpdated(permission):
             state.microphonePermission = permission
             state.isRequestingMicrophonePermission = false
-            state.isMeasuring = permission == .granted
+
+            guard state.isMeasurementStartPending else { return .none }
+            state.isMeasurementStartPending = false
+
+            if permission == .granted {
+                state.isStartingMeasurement = true
+                return .startMeasurement
+            }
+
             state.isMicrophoneSettingsAlertPresented = permission == .denied
             return .none
 
@@ -86,16 +114,33 @@ enum MeterReducer {
             state.isMicrophoneSettingsAlertPresented = false
             return .openApplicationSettings
 
-        case let .previewLevelChanged(value):
-            let previousBand = state.reading.band
-            state.reading = state.reading.updatingCurrent(to: value)
-            guard state.isLiveActivityRunning else { return .none }
+        case .measurementStarted:
+            state.reading = .zero
+            state.measurementSampleCount = 0
+            state.isStartingMeasurement = false
+            state.isMeasuring = true
+            return .none
 
-            // The client coalesces routine updates and sends band changes immediately.
-            if previousBand != state.reading.band {
-                return .updateLiveActivity(state.reading)
-            }
+        case .measurementStopped:
+            state.isStartingMeasurement = false
+            state.isMeasuring = false
+            return .none
+
+        case let .measurementReceived(decibels):
+            guard state.isMeasuring else { return .none }
+            state.reading = state.reading.addingMeasurement(
+                decibels,
+                previousSampleCount: state.measurementSampleCount
+            )
+            state.measurementSampleCount += 1
+            guard state.isLiveActivityRunning else { return .none }
             return .updateLiveActivity(state.reading)
+
+        case let .measurementFailed(message):
+            state.isStartingMeasurement = false
+            state.isMeasuring = false
+            state.measurementErrorMessage = message
+            return .none
 
         case .liveActivityButtonTapped:
             state.errorMessage = nil

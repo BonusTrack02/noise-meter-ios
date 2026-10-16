@@ -11,7 +11,6 @@ struct MeterView: View {
                 VStack(spacing: 28) {
                     readingCard
                     measurementControl
-                    previewControl
                     liveActivityControl
                 }
                 .padding(20)
@@ -55,7 +54,7 @@ struct MeterView: View {
                 .foregroundStyle(.secondary)
 
             HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(store.state.reading.current, format: .number.precision(.fractionLength(0)))
+                Text(currentReadingText)
                     .font(.system(size: 72, weight: .semibold, design: .rounded))
                     .contentTransition(.numericText())
                 Text("dB")
@@ -63,9 +62,9 @@ struct MeterView: View {
                     .foregroundStyle(.secondary)
             }
 
-            Text(store.state.reading.band.title)
+            Text(measurementStatusTitle)
                 .font(.headline)
-                .foregroundStyle(bandColor)
+                .foregroundStyle(measurementStatusColor)
 
             HStack {
                 metric(title: "평균", value: store.state.reading.average)
@@ -73,52 +72,36 @@ struct MeterView: View {
                 metric(title: "최대", value: store.state.reading.peak)
             }
             .frame(height: 48)
+
+            Text("기본 보정값을 적용한 근사치입니다.")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
         }
         .frame(maxWidth: .infinity)
         .padding(24)
         .background(.background, in: .rect(cornerRadius: 24))
     }
 
-    private var previewControl: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("Live Activity 미리보기 값")
-                    .font(.headline)
-                Spacer()
-                Text(store.state.reading.current, format: .number.precision(.fractionLength(0)))
-                    .monospacedDigit()
-            }
-
-            Slider(
-                value: Binding(
-                    get: { store.state.reading.current },
-                    set: { value in
-                        Task { await store.send(.previewLevelChanged(value)) }
-                    }
-                ),
-                in: 30...110,
-                step: 1
-            )
-
-            Text("마이크 측정 엔진을 연결하기 전까지 ActivityKit 표시와 갱신을 검증하기 위한 개발용 입력입니다.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-        }
-        .padding(20)
-        .background(.background, in: .rect(cornerRadius: 20))
-    }
-
     private var measurementControl: some View {
-        Button {
-            Task { await store.send(.measurementButtonTapped) }
-        } label: {
-            Label(measurementButtonTitle, systemImage: measurementButtonSymbol)
-                .frame(maxWidth: .infinity)
+        VStack(spacing: 12) {
+            Button {
+                Task { await store.send(.measurementButtonTapped) }
+            } label: {
+                Label(measurementButtonTitle, systemImage: measurementButtonSymbol)
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .tint(store.state.isMeasuring ? .red : .accentColor)
+            .disabled(isMeasurementControlBusy)
+
+            if let errorMessage = store.state.measurementErrorMessage {
+                Text(errorMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
-        .buttonStyle(.borderedProminent)
-        .controlSize(.large)
-        .tint(store.state.isMeasuring ? .red : .accentColor)
-        .disabled(store.state.isRequestingMicrophonePermission)
     }
 
     private var liveActivityControl: some View {
@@ -134,6 +117,7 @@ struct MeterView: View {
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
+            .disabled(!store.state.isMeasuring && !store.state.isLiveActivityRunning)
 
             if let errorMessage = store.state.errorMessage {
                 Text(errorMessage)
@@ -149,7 +133,7 @@ struct MeterView: View {
             Text(title)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Text(value, format: .number.precision(.fractionLength(0)))
+            Text(metricText(value))
                 .font(.title3.monospacedDigit())
         }
         .frame(maxWidth: .infinity)
@@ -163,9 +147,23 @@ struct MeterView: View {
         }
     }
 
+    private var measurementStatusTitle: String {
+        guard store.state.measurementSampleCount > 0 else {
+            return store.state.isMeasuring ? "측정 중" : "대기 중"
+        }
+        return store.state.reading.band.title
+    }
+
+    private var measurementStatusColor: Color {
+        store.state.measurementSampleCount > 0 ? bandColor : .secondary
+    }
+
     private var measurementButtonTitle: String {
         if store.state.isRequestingMicrophonePermission {
             return "권한 확인 중"
+        }
+        if store.state.isStartingMeasurement {
+            return "측정 준비 중"
         }
         return store.state.isMeasuring ? "측정 중지" : "측정 시작"
     }
@@ -174,7 +172,26 @@ struct MeterView: View {
         if store.state.isRequestingMicrophonePermission {
             return "ellipsis"
         }
+        if store.state.isStartingMeasurement {
+            return "waveform"
+        }
         return store.state.isMeasuring ? "stop.circle.fill" : "mic.fill"
+    }
+
+    private var isMeasurementControlBusy: Bool {
+        store.state.isRequestingMicrophonePermission || store.state.isStartingMeasurement
+    }
+
+    private var currentReadingText: String {
+        guard store.state.measurementSampleCount > 0 else { return "--" }
+        return store.state.reading.current.formatted(
+            .number.precision(.fractionLength(0))
+        )
+    }
+
+    private func metricText(_ value: Double) -> String {
+        guard store.state.measurementSampleCount > 0 else { return "--" }
+        return value.formatted(.number.precision(.fractionLength(0)))
     }
 }
 
@@ -182,7 +199,8 @@ struct MeterView: View {
     MeterView(
         store: MeterStore(
             liveActivity: PreviewLiveActivityClient(),
-            microphonePermission: PreviewMicrophonePermissionClient()
+            microphonePermission: PreviewMicrophonePermissionClient(),
+            microphoneMeter: PreviewMicrophoneMeterClient()
         )
     )
 }
@@ -212,5 +230,16 @@ private final class PreviewMicrophonePermissionClient: MicrophonePermissionClien
     }
 
     func openSettings() async {}
+}
+
+@MainActor
+private final class PreviewMicrophoneMeterClient: MicrophoneMeterClient {
+    func start() async throws -> AsyncStream<Double> {
+        AsyncStream { continuation in
+            continuation.yield(72)
+        }
+    }
+
+    func stop() async {}
 }
 

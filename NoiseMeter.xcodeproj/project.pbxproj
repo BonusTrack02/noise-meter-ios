@@ -18,6 +18,7 @@
 		200000000000000000000009 /* MeterReducerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000009 /* MeterReducerTests.swift */; };
 		20000000000000000000000A /* NoiseMeterLiveActivity.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 110000000000000000000002 /* NoiseMeterLiveActivity.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		20000000000000000000000B /* MicrophonePermissionClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000000A /* MicrophonePermissionClient.swift */; };
+		20000000000000000000000C /* MicrophoneMeterClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000000B /* MicrophoneMeterClient.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -62,6 +63,7 @@
 		100000000000000000000008 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		100000000000000000000009 /* MeterReducerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeterReducerTests.swift; sourceTree = "<group>"; };
 		10000000000000000000000A /* MicrophonePermissionClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicrophonePermissionClient.swift; sourceTree = "<group>"; };
+		10000000000000000000000B /* MicrophoneMeterClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicrophoneMeterClient.swift; sourceTree = "<group>"; };
 		110000000000000000000001 /* NoiseMeter.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NoiseMeter.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		110000000000000000000002 /* NoiseMeterLiveActivity.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = NoiseMeterLiveActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		110000000000000000000003 /* NoiseMeterTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NoiseMeterTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -107,7 +109,7 @@
 		};
 		000000000000000000000013 /* App */ = {isa = PBXGroup; children = (100000000000000000000001 /* NoiseMeterApp.swift */, ); path = App; sourceTree = "<group>"; };
 		000000000000000000000014 /* Domain */ = {isa = PBXGroup; children = (100000000000000000000002 /* NoiseActivityAttributes.swift */, 100000000000000000000003 /* MeterFeature.swift */, ); path = Domain; sourceTree = "<group>"; };
-		000000000000000000000015 /* Infrastructure */ = {isa = PBXGroup; children = (100000000000000000000004 /* LiveActivityClient.swift */, 10000000000000000000000A /* MicrophonePermissionClient.swift */, ); path = Infrastructure; sourceTree = "<group>"; };
+		000000000000000000000015 /* Infrastructure */ = {isa = PBXGroup; children = (100000000000000000000004 /* LiveActivityClient.swift */, 10000000000000000000000A /* MicrophonePermissionClient.swift */, 10000000000000000000000B /* MicrophoneMeterClient.swift */, ); path = Infrastructure; sourceTree = "<group>"; };
 		000000000000000000000016 /* UI */ = {isa = PBXGroup; children = (100000000000000000000005 /* MeterView.swift */, ); path = UI; sourceTree = "<group>"; };
 		000000000000000000000017 /* NoiseMeterLiveActivity */ = {
 			isa = PBXGroup;
@@ -215,6 +217,7 @@
 				200000000000000000000003 /* MeterFeature.swift in Sources */,
 				200000000000000000000004 /* LiveActivityClient.swift in Sources */,
 				20000000000000000000000B /* MicrophonePermissionClient.swift in Sources */,
+				20000000000000000000000C /* MicrophoneMeterClient.swift in Sources */,
 				200000000000000000000005 /* MeterView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

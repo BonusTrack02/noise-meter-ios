@@ -57,17 +57,28 @@ struct NoiseReading: Codable, Equatable, Sendable {
     let average: Double
     let peak: Double
 
+    static let zero = NoiseReading(current: 0, average: 0, peak: 0)
     static let preview = NoiseReading(current: 72, average: 69, peak: 81)
 
     var band: NoiseBand {
         NoiseBand(decibels: current)
     }
 
-    func updatingCurrent(to value: Double) -> NoiseReading {
-        NoiseReading(
-            current: value,
-            average: (average * 0.8) + (value * 0.2),
-            peak: max(peak, value)
+    func addingMeasurement(_ value: Double, previousSampleCount: Int) -> NoiseReading {
+        let boundedValue = min(max(value, 0), 120)
+        guard previousSampleCount > 0 else {
+            return NoiseReading(
+                current: boundedValue,
+                average: boundedValue,
+                peak: boundedValue
+            )
+        }
+
+        return NoiseReading(
+            current: (current * 0.75) + (boundedValue * 0.25),
+            average: ((average * Double(previousSampleCount)) + boundedValue)
+                / Double(previousSampleCount + 1),
+            peak: max(peak, boundedValue)
         )
     }
 }
