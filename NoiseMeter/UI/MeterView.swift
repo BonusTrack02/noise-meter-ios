@@ -234,9 +234,11 @@ private final class PreviewMicrophonePermissionClient: MicrophonePermissionClien
 
 @MainActor
 private final class PreviewMicrophoneMeterClient: MicrophoneMeterClient {
-    func start() async throws -> AsyncStream<Double> {
+    func start() async throws -> AsyncStream<SoundLevelSample> {
         AsyncStream { continuation in
-            continuation.yield(72)
+            continuation.yield(
+                SoundLevelSample(decibels: 72, duration: 1)
+            )
         }
     }
 

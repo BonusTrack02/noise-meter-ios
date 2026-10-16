@@ -1,6 +1,11 @@
 import ActivityKit
 import Foundation
 
+struct SoundLevelSample: Equatable, Sendable {
+    let decibels: Double
+    let duration: TimeInterval
+}
+
 struct NoiseActivityAttributes: ActivityAttributes {
     struct ContentState: Codable, Hashable, Sendable {
         let currentDecibels: Int
@@ -53,6 +58,8 @@ enum NoiseBand: String, Codable, Hashable, Sendable {
 }
 
 struct NoiseReading: Codable, Equatable, Sendable {
+    private static let slowTimeConstant: TimeInterval = 1
+
     let current: Double
     let average: Double
     let peak: Double
@@ -64,8 +71,11 @@ struct NoiseReading: Codable, Equatable, Sendable {
         NoiseBand(decibels: current)
     }
 
-    func addingMeasurement(_ value: Double, previousSampleCount: Int) -> NoiseReading {
-        let boundedValue = min(max(value, 0), 120)
+    func addingMeasurement(
+        _ sample: SoundLevelSample,
+        previousSampleCount: Int
+    ) -> NoiseReading {
+        let boundedValue = min(max(sample.decibels, 0), 120)
         guard previousSampleCount > 0 else {
             return NoiseReading(
                 current: boundedValue,
@@ -75,11 +85,24 @@ struct NoiseReading: Codable, Equatable, Sendable {
         }
 
         return NoiseReading(
-            current: (current * 0.75) + (boundedValue * 0.25),
+            current: smoothedCurrent(
+                toward: boundedValue,
+                sampleDuration: sample.duration
+            ),
             average: ((average * Double(previousSampleCount)) + boundedValue)
                 / Double(previousSampleCount + 1),
             peak: max(peak, boundedValue)
         )
+    }
+
+    private func smoothedCurrent(
+        toward value: Double,
+        sampleDuration: TimeInterval
+    ) -> Double {
+        guard sampleDuration.isFinite, sampleDuration > 0 else { return value }
+
+        let smoothingFactor = 1 - exp(-sampleDuration / Self.slowTimeConstant)
+        return current + (smoothingFactor * (value - current))
     }
 }
 

@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import NoiseMeter
 
@@ -155,7 +156,9 @@ struct MeterReducerTests {
 
         let effect = MeterReducer.reduce(
             state: &state,
-            action: .measurementReceived(68)
+            action: .measurementReceived(
+                SoundLevelSample(decibels: 68, duration: 0.1)
+            )
         )
 
         #expect(state.reading == NoiseReading(current: 68, average: 68, peak: 68))
@@ -172,14 +175,19 @@ struct MeterReducerTests {
 
         _ = MeterReducer.reduce(
             state: &state,
-            action: .measurementReceived(60)
+            action: .measurementReceived(
+                SoundLevelSample(decibels: 60, duration: 0.1)
+            )
         )
         _ = MeterReducer.reduce(
             state: &state,
-            action: .measurementReceived(80)
+            action: .measurementReceived(
+                SoundLevelSample(decibels: 80, duration: 1)
+            )
         )
 
-        #expect(state.reading.current == 65)
+        let expectedCurrent = 60 + ((1 - exp(-1.0)) * 20)
+        #expect(abs(state.reading.current - expectedCurrent) < 0.001)
         #expect(state.reading.average == 70)
         #expect(state.reading.peak == 80)
         #expect(state.measurementSampleCount == 2)
@@ -220,7 +228,9 @@ struct MeterReducerTests {
 
         let effect = MeterReducer.reduce(
             state: &state,
-            action: .measurementReceived(86)
+            action: .measurementReceived(
+                SoundLevelSample(decibels: 86, duration: 0.1)
+            )
         )
 
         #expect(state.reading.current == 86)

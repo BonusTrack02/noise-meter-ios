@@ -31,7 +31,7 @@ enum MeterAction: Equatable, Sendable {
     case openApplicationSettingsButtonTapped
     case measurementStarted
     case measurementStopped
-    case measurementReceived(Double)
+    case measurementReceived(SoundLevelSample)
     case measurementFailed(String)
     case liveActivityButtonTapped
     case liveActivityStarted
@@ -126,10 +126,10 @@ enum MeterReducer {
             state.isMeasuring = false
             return .none
 
-        case let .measurementReceived(decibels):
+        case let .measurementReceived(sample):
             guard state.isMeasuring else { return .none }
             state.reading = state.reading.addingMeasurement(
-                decibels,
+                sample,
                 previousSampleCount: state.measurementSampleCount
             )
             state.measurementSampleCount += 1

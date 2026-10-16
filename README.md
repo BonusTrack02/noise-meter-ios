@@ -18,7 +18,8 @@ The app now includes its first on-device measurement path:
 - Request microphone access only when measurement starts.
 - Prefer the iPhone's built-in microphone for capture.
 - Sample PCM input with `AVAudioEngine` and convert RMS levels to approximate decibels.
-- Track smoothed current, session average, and peak values.
+- Apply one-second Slow smoothing to the current value while preserving raw peaks.
+- Track the current, session average, and peak values.
 - Update the Live Activity from real microphone readings on a coalesced cadence.
 - Provide Lock Screen, Dynamic Island, and supplemental small-family layouts used by CarPlay.
 

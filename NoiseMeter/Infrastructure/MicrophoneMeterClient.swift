@@ -3,7 +3,7 @@ import AVFAudio
 
 @MainActor
 protocol MicrophoneMeterClient: AnyObject {
-    func start() async throws -> AsyncStream<Double>
+    func start() async throws -> AsyncStream<SoundLevelSample>
     func stop() async
 }
 
@@ -44,7 +44,7 @@ final class SystemMicrophoneMeterClient: MicrophoneMeterClient {
     private let audioSession = AVAudioSession.sharedInstance()
     private let calibrationOffset: Double
 
-    private var continuation: AsyncStream<Double>.Continuation?
+    private var continuation: AsyncStream<SoundLevelSample>.Continuation?
     private var isTapInstalled = false
     private var isSessionActive = false
 
@@ -52,7 +52,7 @@ final class SystemMicrophoneMeterClient: MicrophoneMeterClient {
         self.calibrationOffset = calibrationOffset
     }
 
-    func start() async throws -> AsyncStream<Double> {
+    func start() async throws -> AsyncStream<SoundLevelSample> {
         await stop()
 
         do {
@@ -72,7 +72,7 @@ final class SystemMicrophoneMeterClient: MicrophoneMeterClient {
                 throw MicrophoneMeterError.invalidInputFormat
             }
 
-            let (stream, continuation) = AsyncStream<Double>.makeStream(
+            let (stream, continuation) = AsyncStream<SoundLevelSample>.makeStream(
                 bufferingPolicy: .bufferingNewest(1)
             )
             self.continuation = continuation
@@ -153,15 +153,19 @@ final class SystemMicrophoneMeterClient: MicrophoneMeterClient {
     // this closure outside MainActor isolation prevents a Swift 6 executor
     // precondition failure when the first microphone buffer arrives.
     private nonisolated static func makeTapHandler(
-        continuation: AsyncStream<Double>.Continuation,
+        continuation: AsyncStream<SoundLevelSample>.Continuation,
         calibrationOffset: Double
     ) -> AVAudioNodeTapBlock {
         { buffer, _ in
             guard let rms = rootMeanSquare(of: buffer) else { return }
+            let duration = Double(buffer.frameLength) / buffer.format.sampleRate
             continuation.yield(
-                DecibelMeterMath.approximateDecibels(
-                    rms: rms,
-                    calibrationOffset: calibrationOffset
+                SoundLevelSample(
+                    decibels: DecibelMeterMath.approximateDecibels(
+                        rms: rms,
+                        calibrationOffset: calibrationOffset
+                    ),
+                    duration: duration
                 )
             )
         }

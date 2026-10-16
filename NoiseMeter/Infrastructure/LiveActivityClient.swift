@@ -207,9 +207,9 @@ final class MeterStore {
 
                 measurementTask?.cancel()
                 measurementTask = Task { [weak self] in
-                    for await decibels in measurements {
+                    for await sample in measurements {
                         guard !Task.isCancelled else { break }
-                        await self?.send(.measurementReceived(decibels))
+                        await self?.send(.measurementReceived(sample))
                     }
 
                     guard !Task.isCancelled else { return }
