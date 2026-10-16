@@ -2,6 +2,7 @@ import Foundation
 
 struct MeterState: Equatable, Sendable {
     var reading = NoiseReading.zero
+    var laeqAccumulator = LAeqAccumulator()
     var measurementSampleCount = 0
     var isMeasuring = false
     var isStartingMeasurement = false
@@ -116,6 +117,7 @@ enum MeterReducer {
 
         case .measurementStarted:
             state.reading = .zero
+            state.laeqAccumulator = LAeqAccumulator()
             state.measurementSampleCount = 0
             state.isStartingMeasurement = false
             state.isMeasuring = true
@@ -128,9 +130,11 @@ enum MeterReducer {
 
         case let .measurementReceived(sample):
             guard state.isMeasuring else { return .none }
+            guard let laeq = state.laeqAccumulator.add(sample) else { return .none }
             state.reading = state.reading.addingMeasurement(
                 sample,
-                previousSampleCount: state.measurementSampleCount
+                previousSampleCount: state.measurementSampleCount,
+                laeq: laeq
             )
             state.measurementSampleCount += 1
             guard state.isLiveActivityRunning else { return .none }

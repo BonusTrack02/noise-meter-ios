@@ -21,9 +21,9 @@ struct NoiseMeterLiveActivity: Widget {
 
                 DynamicIslandExpandedRegion(.bottom) {
                     HStack {
-                        Text("평균 \(context.state.averageDecibels) dB")
+                        Text("LAeq \(context.state.laeqDecibels) dBA")
                         Spacer()
-                        Text("최대 \(context.state.peakDecibels) dB")
+                        Text("최대 \(context.state.peakDecibels) dBA")
                     }
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -47,7 +47,7 @@ struct NoiseMeterLiveActivity: Widget {
         HStack(alignment: .firstTextBaseline, spacing: 3) {
             Text("\(value)")
                 .font(font.monospacedDigit().weight(.semibold))
-            Text("dB")
+            Text("dBA")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -85,7 +85,7 @@ private struct NoiseActivityView: View {
                 HStack(alignment: .firstTextBaseline, spacing: 3) {
                     Text("\(context.state.currentDecibels)")
                         .font(.title.bold().monospacedDigit())
-                    Text("dB")
+                    Text("dBA")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -114,13 +114,13 @@ private struct NoiseActivityView: View {
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text("\(context.state.currentDecibels)")
                     .font(.system(size: 44, weight: .bold, design: .rounded).monospacedDigit())
-                Text("dB")
+                Text("dBA")
                     .font(.headline)
                     .foregroundStyle(.secondary)
                 Spacer()
                 VStack(alignment: .trailing, spacing: 3) {
-                    Text("평균 \(context.state.averageDecibels) dB")
-                    Text("최대 \(context.state.peakDecibels) dB")
+                    Text("LAeq \(context.state.laeqDecibels) dBA")
+                    Text("최대 \(context.state.peakDecibels) dBA")
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)

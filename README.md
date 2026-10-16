@@ -17,13 +17,13 @@ The app now includes its first on-device measurement path:
 
 - Request microphone access only when measurement starts.
 - Prefer the iPhone's built-in microphone for capture.
-- Sample PCM input with `AVAudioEngine` and convert RMS levels to approximate decibels.
-- Apply one-second Slow smoothing to the current value while preserving raw peaks.
-- Track the current, session average, and peak values.
+- Apply an A-weighting filter to PCM input and convert its RMS level to approximate dBA.
+- Apply one-second Slow smoothing to the current dBA value while preserving raw peaks.
+- Calculate session LAeq from time-weighted acoustic energy.
 - Update the Live Activity from real microphone readings on a coalesced cadence.
 - Provide Lock Screen, Dynamic Island, and supplemental small-family layouts used by CarPlay.
 
-The displayed value currently uses a fixed calibration offset. It is an estimate, not a calibrated dB SPL or dBA measurement. Device-specific calibration and frequency weighting remain future work.
+The displayed dBA and LAeq values use a fixed calibration offset. They are estimates, not readings from an IEC 61672 compliant sound level meter. Device-specific microphone calibration remains future work.
 
 ## Run
 

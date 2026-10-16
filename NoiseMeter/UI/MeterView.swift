@@ -57,7 +57,7 @@ struct MeterView: View {
                 Text(currentReadingText)
                     .font(.system(size: 72, weight: .semibold, design: .rounded))
                     .contentTransition(.numericText())
-                Text("dB")
+                Text("dBA")
                     .font(.title2)
                     .foregroundStyle(.secondary)
             }
@@ -67,13 +67,13 @@ struct MeterView: View {
                 .foregroundStyle(measurementStatusColor)
 
             HStack {
-                metric(title: "평균", value: store.state.reading.average)
+                metric(title: "LAeq", value: store.state.reading.laeq)
                 Divider()
                 metric(title: "최대", value: store.state.reading.peak)
             }
             .frame(height: 48)
 
-            Text("기본 보정값을 적용한 근사치입니다.")
+            Text("기본 보정값을 적용한 추정 dBA/LAeq입니다.")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
         }
@@ -237,7 +237,7 @@ private final class PreviewMicrophoneMeterClient: MicrophoneMeterClient {
     func start() async throws -> AsyncStream<SoundLevelSample> {
         AsyncStream { continuation in
             continuation.yield(
-                SoundLevelSample(decibels: 72, duration: 1)
+                SoundLevelSample(decibelsA: 72, duration: 1)
             )
         }
     }

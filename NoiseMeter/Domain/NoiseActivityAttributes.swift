@@ -2,21 +2,21 @@ import ActivityKit
 import Foundation
 
 struct SoundLevelSample: Equatable, Sendable {
-    let decibels: Double
+    let decibelsA: Double
     let duration: TimeInterval
 }
 
 struct NoiseActivityAttributes: ActivityAttributes {
     struct ContentState: Codable, Hashable, Sendable {
         let currentDecibels: Int
-        let averageDecibels: Int
+        let laeqDecibels: Int
         let peakDecibels: Int
         let band: NoiseBand
         let measuredAt: Date
 
         init(reading: NoiseReading, measuredAt: Date = .now) {
             currentDecibels = reading.current.roundedInt
-            averageDecibels = reading.average.roundedInt
+            laeqDecibels = reading.laeq.roundedInt
             peakDecibels = reading.peak.roundedInt
             band = reading.band
             self.measuredAt = measuredAt
@@ -61,11 +61,11 @@ struct NoiseReading: Codable, Equatable, Sendable {
     private static let slowTimeConstant: TimeInterval = 1
 
     let current: Double
-    let average: Double
+    let laeq: Double
     let peak: Double
 
-    static let zero = NoiseReading(current: 0, average: 0, peak: 0)
-    static let preview = NoiseReading(current: 72, average: 69, peak: 81)
+    static let zero = NoiseReading(current: 0, laeq: 0, peak: 0)
+    static let preview = NoiseReading(current: 72, laeq: 69, peak: 81)
 
     var band: NoiseBand {
         NoiseBand(decibels: current)
@@ -73,13 +73,14 @@ struct NoiseReading: Codable, Equatable, Sendable {
 
     func addingMeasurement(
         _ sample: SoundLevelSample,
-        previousSampleCount: Int
+        previousSampleCount: Int,
+        laeq: Double
     ) -> NoiseReading {
-        let boundedValue = min(max(sample.decibels, 0), 120)
+        let boundedValue = min(max(sample.decibelsA, 0), 120)
         guard previousSampleCount > 0 else {
             return NoiseReading(
                 current: boundedValue,
-                average: boundedValue,
+                laeq: laeq,
                 peak: boundedValue
             )
         }
@@ -89,8 +90,7 @@ struct NoiseReading: Codable, Equatable, Sendable {
                 toward: boundedValue,
                 sampleDuration: sample.duration
             ),
-            average: ((average * Double(previousSampleCount)) + boundedValue)
-                / Double(previousSampleCount + 1),
+            laeq: laeq,
             peak: max(peak, boundedValue)
         )
     }
@@ -103,6 +103,29 @@ struct NoiseReading: Codable, Equatable, Sendable {
 
         let smoothingFactor = 1 - exp(-sampleDuration / Self.slowTimeConstant)
         return current + (smoothingFactor * (value - current))
+    }
+}
+
+struct LAeqAccumulator: Equatable, Sendable {
+    private(set) var energyExposure = 0.0
+    private(set) var measuredDuration: TimeInterval = 0
+
+    mutating func add(_ sample: SoundLevelSample) -> Double? {
+        guard sample.decibelsA.isFinite,
+              sample.duration.isFinite,
+              sample.duration > 0
+        else {
+            return nil
+        }
+
+        let boundedLevel = min(max(sample.decibelsA, 0), 120)
+        // LAeq = 10 log10((1 / T) * integral(10^(L_A(t) / 10)) dt)
+        let energy = pow(10, boundedLevel / 10)
+        energyExposure += energy * sample.duration
+        measuredDuration += sample.duration
+
+        guard energyExposure.isFinite, measuredDuration > 0 else { return nil }
+        return min(max(10 * log10(energyExposure / measuredDuration), 0), 120)
     }
 }
 
