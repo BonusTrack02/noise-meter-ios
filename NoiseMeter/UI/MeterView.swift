@@ -71,7 +71,7 @@ struct MeterView: View {
                 Divider()
                 metric(title: "LAeq", value: store.state.reading.laeq)
                 Divider()
-                metric(title: "최대 dBA", value: store.state.reading.peak)
+                metric(title: "최대 dBA", value: store.state.reading.maximum)
             }
             .frame(height: 48)
 

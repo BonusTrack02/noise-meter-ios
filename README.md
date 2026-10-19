@@ -18,10 +18,11 @@ The app now includes its first on-device measurement path:
 - Request microphone access only when measurement starts.
 - Prefer the iPhone's built-in microphone for capture.
 - Apply an A-weighting filter to PCM input and convert its RMS level to approximate dBA.
-- Apply one-second Slow smoothing to the current dBA value while preserving raw peaks.
+- Apply one-second Slow smoothing to the current dBA value.
 - Calculate session LAeq from time-weighted acoustic energy.
-- Track and display the session minimum dBA, LAeq, and maximum dBA.
+- Track and display the session minimum and maximum from the same Slow-smoothed levels.
 - Process every audio buffer while publishing meter UI snapshots ten times per second.
+- Keep an active microphone measurement running while the app is in the background.
 - Update the Live Activity from real microphone readings on a coalesced cadence.
 - Provide Lock Screen, Dynamic Island, and supplemental small-family layouts used by CarPlay.
 

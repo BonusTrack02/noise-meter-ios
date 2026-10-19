@@ -23,7 +23,7 @@ struct NoiseMeterLiveActivity: Widget {
                     HStack {
                         Text("LAeq \(context.state.laeqDecibels) dBA")
                         Spacer()
-                        Text("최대 \(context.state.peakDecibels) dBA")
+                        Text("최대 \(context.state.maximumDecibels) dBA")
                     }
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -120,7 +120,7 @@ private struct NoiseActivityView: View {
                 Spacer()
                 VStack(alignment: .trailing, spacing: 3) {
                     Text("LAeq \(context.state.laeqDecibels) dBA")
-                    Text("최대 \(context.state.peakDecibels) dBA")
+                    Text("최대 \(context.state.maximumDecibels) dBA")
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)

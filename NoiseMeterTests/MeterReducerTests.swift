@@ -20,6 +20,31 @@ struct MeterReducerTests {
     }
 
     @Test
+    func returningToForegroundPreservesOngoingMeasurement() {
+        var state = MeterState(
+            reading: .preview,
+            measurementSampleCount: 42,
+            isMeasuring: true,
+            isLiveActivityRunning: true,
+            microphonePermission: .granted
+        )
+
+        let effect = MeterReducer.reduce(
+            state: &state,
+            action: .appeared(
+                isLiveActivityRunning: true,
+                microphonePermission: .granted
+            )
+        )
+
+        #expect(state.reading == .preview)
+        #expect(state.measurementSampleCount == 42)
+        #expect(state.isMeasuring)
+        #expect(state.isLiveActivityRunning)
+        #expect(effect == .none)
+    }
+
+    @Test
     func requestingUndeterminedMicrophonePermissionProducesEffect() {
         var state = MeterState(microphonePermission: .undetermined)
 
@@ -178,7 +203,7 @@ struct MeterReducerTests {
                     current: 68,
                     minimum: 62,
                     laeq: 68,
-                    peak: 74
+                    maximum: 74
                 ),
                 sampleCount: 1
             )
@@ -189,7 +214,7 @@ struct MeterReducerTests {
                 current: 68,
                 minimum: 62,
                 laeq: 68,
-                peak: 74
+                maximum: 74
             )
         )
         #expect(state.measurementSampleCount == 1)
@@ -197,7 +222,7 @@ struct MeterReducerTests {
     }
 
     @Test
-    func processingMultipleMeasurementsTracksMinimumLAeqAndPeak() throws {
+    func processingMultipleMeasurementsTracksMinimumLAeqAndMaximum() throws {
         var processor = NoiseMeasurementProcessor()
 
         _ = processor.process(
@@ -215,9 +240,42 @@ struct MeterReducerTests {
         #expect(abs(reading.current - expectedCurrent) < 0.001)
         #expect(reading.minimum == 60)
         #expect(abs(reading.laeq - expectedLAeq) < 0.001)
-        #expect(reading.peak == 80)
+        #expect(abs(reading.maximum - expectedCurrent) < 0.001)
         #expect(processor.sampleCount == 2)
         #expect(abs(processor.measuredDuration - 1.1) < 0.001)
+    }
+
+    @Test
+    func minimumUsesSlowSmoothedLevelInsteadOfRawBufferLevel() throws {
+        var processor = NoiseMeasurementProcessor()
+
+        _ = processor.process(
+            SoundLevelSample(decibelsA: 80, duration: 0.1)
+        )
+        let updatedReading = processor.process(
+            SoundLevelSample(decibelsA: 40, duration: 1)
+        )
+        let reading = try #require(updatedReading)
+        let expectedCurrent = 80 + ((1 - exp(-1.0)) * -40)
+
+        #expect(abs(reading.current - expectedCurrent) < 0.001)
+        #expect(abs(reading.minimum - expectedCurrent) < 0.001)
+        #expect(reading.maximum == 80)
+    }
+
+    @Test
+    func liveActivityMaximumKeepsItsExistingCodingKey() throws {
+        let state = NoiseActivityAttributes.ContentState(
+            reading: .preview,
+            measuredAt: Date(timeIntervalSince1970: 0)
+        )
+        let encodedState = try JSONEncoder().encode(state)
+        let json = try #require(
+            JSONSerialization.jsonObject(with: encodedState) as? [String: Any]
+        )
+
+        #expect(json["peakDecibels"] != nil)
+        #expect(json["maximumDecibels"] == nil)
     }
 
     @Test
@@ -260,7 +318,7 @@ struct MeterReducerTests {
                     current: 86,
                     minimum: 64,
                     laeq: 82,
-                    peak: 90
+                    maximum: 90
                 ),
                 sampleCount: 12
             )

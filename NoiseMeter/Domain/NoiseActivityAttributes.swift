@@ -10,14 +10,22 @@ struct NoiseActivityAttributes: ActivityAttributes {
     struct ContentState: Codable, Hashable, Sendable {
         let currentDecibels: Int
         let laeqDecibels: Int
-        let peakDecibels: Int
+        let maximumDecibels: Int
         let band: NoiseBand
         let measuredAt: Date
+
+        private enum CodingKeys: String, CodingKey {
+            case currentDecibels
+            case laeqDecibels
+            case maximumDecibels = "peakDecibels"
+            case band
+            case measuredAt
+        }
 
         init(reading: NoiseReading, measuredAt: Date = .now) {
             currentDecibels = reading.current.roundedInt
             laeqDecibels = reading.laeq.roundedInt
-            peakDecibels = reading.peak.roundedInt
+            maximumDecibels = reading.maximum.roundedInt
             band = reading.band
             self.measuredAt = measuredAt
         }
@@ -63,10 +71,10 @@ struct NoiseReading: Codable, Equatable, Sendable {
     let current: Double
     let minimum: Double
     let laeq: Double
-    let peak: Double
+    let maximum: Double
 
-    static let zero = NoiseReading(current: 0, minimum: 0, laeq: 0, peak: 0)
-    static let preview = NoiseReading(current: 72, minimum: 54, laeq: 69, peak: 81)
+    static let zero = NoiseReading(current: 0, minimum: 0, laeq: 0, maximum: 0)
+    static let preview = NoiseReading(current: 72, minimum: 54, laeq: 69, maximum: 81)
 
     var band: NoiseBand {
         NoiseBand(decibels: current)
@@ -83,18 +91,19 @@ struct NoiseReading: Codable, Equatable, Sendable {
                 current: boundedValue,
                 minimum: boundedValue,
                 laeq: laeq,
-                peak: boundedValue
+                maximum: boundedValue
             )
         }
 
+        let slowValue = smoothedCurrent(
+            toward: boundedValue,
+            sampleDuration: sample.duration
+        )
         return NoiseReading(
-            current: smoothedCurrent(
-                toward: boundedValue,
-                sampleDuration: sample.duration
-            ),
-            minimum: min(minimum, boundedValue),
+            current: slowValue,
+            minimum: min(minimum, slowValue),
             laeq: laeq,
-            peak: max(peak, boundedValue)
+            maximum: max(maximum, slowValue)
         )
     }
 
