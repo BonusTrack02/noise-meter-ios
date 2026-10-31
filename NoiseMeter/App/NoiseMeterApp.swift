@@ -5,7 +5,8 @@ struct NoiseMeterApp: App {
     @State private var store = MeterStore(
         liveActivity: SystemLiveActivityClient(),
         microphonePermission: SystemMicrophonePermissionClient(),
-        microphoneMeter: SystemMicrophoneMeterClient()
+        microphoneMeter: SystemMicrophoneMeterClient(),
+        preferences: SystemMeterPreferencesClient()
     )
 
     var body: some Scene {

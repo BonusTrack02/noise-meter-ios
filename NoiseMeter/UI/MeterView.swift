@@ -17,6 +17,15 @@ struct MeterView: View {
             }
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Noise Meter")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink {
+                        SettingsView(store: store)
+                    } label: {
+                        Label("설정", systemImage: "gearshape")
+                    }
+                }
+            }
         }
         .task {
             await store.synchronize()
@@ -202,12 +211,64 @@ struct MeterView: View {
     }
 }
 
+private struct SettingsView: View {
+    let store: MeterStore
+
+    var body: some View {
+        Form {
+            Section {
+                Picker(
+                    "측정 반응",
+                    selection: Binding(
+                        get: {
+                            store.state.preferences.measurementResponse
+                        },
+                        set: { response in
+                            Task {
+                                await store.send(
+                                    .measurementResponseChanged(response)
+                                )
+                            }
+                        }
+                    )
+                ) {
+                    Text("빠르게").tag(MeasurementResponse.fast)
+                    Text("안정적으로").tag(MeasurementResponse.stable)
+                }
+                .pickerStyle(.segmented)
+                .disabled(store.state.isMeasurementConfigurationLocked)
+            } header: {
+                Text("측정 반응")
+            } footer: {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(measurementResponseDescription)
+                    if store.state.isMeasurementConfigurationLocked {
+                        Text("측정 중에는 변경할 수 없습니다.")
+                    }
+                }
+            }
+        }
+        .navigationTitle("설정")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var measurementResponseDescription: String {
+        switch store.state.preferences.measurementResponse {
+        case .fast:
+            "갑작스러운 소음 변화를 빠르게 보여줍니다. 값이 자주 움직일 수 있습니다."
+        case .stable:
+            "짧은 소음 변화를 부드럽게 반영해 값이 덜 흔들립니다."
+        }
+    }
+}
+
 #Preview {
     MeterView(
         store: MeterStore(
             liveActivity: PreviewLiveActivityClient(),
             microphonePermission: PreviewMicrophonePermissionClient(),
-            microphoneMeter: PreviewMicrophoneMeterClient()
+            microphoneMeter: PreviewMicrophoneMeterClient(),
+            preferences: PreviewMeterPreferencesClient()
         )
     )
 }
@@ -250,5 +311,18 @@ private final class PreviewMicrophoneMeterClient: MicrophoneMeterClient {
     }
 
     func stop() async {}
+}
+
+@MainActor
+private final class PreviewMeterPreferencesClient: MeterPreferencesClient {
+    private var preferences = MeterPreferences.default
+
+    func load() -> MeterPreferences {
+        preferences
+    }
+
+    func save(_ preferences: MeterPreferences) {
+        self.preferences = preferences
+    }
 }
 

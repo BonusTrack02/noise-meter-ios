@@ -167,6 +167,45 @@ enum LiveActivityError: LocalizedError {
 }
 
 @MainActor
+protocol MeterPreferencesClient: AnyObject {
+    func load() -> MeterPreferences
+    func save(_ preferences: MeterPreferences)
+}
+
+@MainActor
+final class SystemMeterPreferencesClient: MeterPreferencesClient {
+    private enum Key {
+        static let measurementResponse = "settings.measurementResponse"
+    }
+
+    private let defaults: UserDefaults
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        defaults.register(
+            defaults: [
+                Key.measurementResponse: MeterPreferences.default.measurementResponse.rawValue
+            ]
+        )
+    }
+
+    func load() -> MeterPreferences {
+        MeterPreferences(
+            measurementResponse: MeasurementResponse(
+                rawValue: defaults.string(forKey: Key.measurementResponse) ?? ""
+            ) ?? .stable
+        )
+    }
+
+    func save(_ preferences: MeterPreferences) {
+        defaults.set(
+            preferences.measurementResponse.rawValue,
+            forKey: Key.measurementResponse
+        )
+    }
+}
+
+@MainActor
 @Observable
 final class MeterStore {
     private(set) var state = MeterState()
@@ -175,6 +214,7 @@ final class MeterStore {
     private let liveActivity: any LiveActivityClient
     private let microphonePermission: any MicrophonePermissionClient
     private let microphoneMeter: any MicrophoneMeterClient
+    private let preferencesClient: any MeterPreferencesClient
     @ObservationIgnored
     private var measurementProcessor = NoiseMeasurementProcessor()
     @ObservationIgnored
@@ -186,12 +226,14 @@ final class MeterStore {
         liveActivity: any LiveActivityClient,
         microphonePermission: any MicrophonePermissionClient,
         microphoneMeter: any MicrophoneMeterClient,
+        preferences: any MeterPreferencesClient,
         measurementDisplayInterval: TimeInterval = MeasurementDisplayCadence.defaultInterval
     ) {
         self.measurementDisplayInterval = measurementDisplayInterval
         self.liveActivity = liveActivity
         self.microphonePermission = microphonePermission
         self.microphoneMeter = microphoneMeter
+        preferencesClient = preferences
         measurementDisplayCadence = MeasurementDisplayCadence(
             interval: measurementDisplayInterval
         )
@@ -199,6 +241,10 @@ final class MeterStore {
 
     func send(_ action: MeterAction) async {
         let effect = MeterReducer.reduce(state: &state, action: action)
+
+        if case .measurementResponseChanged = action {
+            preferencesClient.save(state.preferences)
+        }
 
         switch effect {
         case .none:
@@ -267,13 +313,16 @@ final class MeterStore {
         await send(
             .appeared(
                 isLiveActivityRunning: liveActivity.isRunning,
-                microphonePermission: microphonePermission.authorizationStatus
+                microphonePermission: microphonePermission.authorizationStatus,
+                preferences: preferencesClient.load()
             )
         )
     }
 
     private func resetMeasurementProcessing() {
-        measurementProcessor = NoiseMeasurementProcessor()
+        measurementProcessor = NoiseMeasurementProcessor(
+            response: state.preferences.measurementResponse
+        )
         measurementDisplayCadence = MeasurementDisplayCadence(
             interval: measurementDisplayInterval
         )

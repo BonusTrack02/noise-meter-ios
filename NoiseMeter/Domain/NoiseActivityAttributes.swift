@@ -65,9 +65,19 @@ enum NoiseBand: String, Codable, Hashable, Sendable {
     }
 }
 
-struct NoiseReading: Codable, Equatable, Sendable {
-    private static let slowTimeConstant: TimeInterval = 1
+enum MeasurementResponse: String, Equatable, Hashable, Sendable {
+    case fast
+    case stable
 
+    var timeConstant: TimeInterval {
+        switch self {
+        case .fast: 0.125
+        case .stable: 1
+        }
+    }
+}
+
+struct NoiseReading: Codable, Equatable, Sendable {
     let current: Double
     let minimum: Double
     let laeq: Double
@@ -83,7 +93,8 @@ struct NoiseReading: Codable, Equatable, Sendable {
     func addingMeasurement(
         _ sample: SoundLevelSample,
         previousSampleCount: Int,
-        laeq: Double
+        laeq: Double,
+        response: MeasurementResponse = .stable
     ) -> NoiseReading {
         let boundedValue = min(max(sample.decibelsA, 0), 120)
         guard previousSampleCount > 0 else {
@@ -97,7 +108,8 @@ struct NoiseReading: Codable, Equatable, Sendable {
 
         let slowValue = smoothedCurrent(
             toward: boundedValue,
-            sampleDuration: sample.duration
+            sampleDuration: sample.duration,
+            timeConstant: response.timeConstant
         )
         return NoiseReading(
             current: slowValue,
@@ -109,11 +121,12 @@ struct NoiseReading: Codable, Equatable, Sendable {
 
     private func smoothedCurrent(
         toward value: Double,
-        sampleDuration: TimeInterval
+        sampleDuration: TimeInterval,
+        timeConstant: TimeInterval
     ) -> Double {
         guard sampleDuration.isFinite, sampleDuration > 0 else { return value }
 
-        let smoothingFactor = 1 - exp(-sampleDuration / Self.slowTimeConstant)
+        let smoothingFactor = 1 - exp(-sampleDuration / timeConstant)
         return current + (smoothingFactor * (value - current))
     }
 }

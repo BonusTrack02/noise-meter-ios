@@ -18,9 +18,9 @@ The app now includes its first on-device measurement path:
 - Request microphone access only when measurement starts.
 - Prefer the iPhone's built-in microphone for capture.
 - Apply an A-weighting filter to PCM input and convert its RMS level to approximate dBA.
-- Apply one-second Slow smoothing to the current dBA value.
+- Let users choose a Fast (0.125 second) or Stable (1 second) response for the current dBA value.
 - Calculate session LAeq from time-weighted acoustic energy.
-- Track and display the session minimum and maximum from the same Slow-smoothed levels.
+- Track and display the session minimum and maximum from the same response-smoothed levels.
 - Process every audio buffer while publishing meter UI snapshots ten times per second.
 - Keep an active microphone measurement running while the app is in the background.
 - Update the Live Activity from real microphone readings on a coalesced cadence.
@@ -33,8 +33,9 @@ The displayed dBA and LAeq values use a fixed calibration offset. They are estim
 1. Open `NoiseMeter.xcodeproj` in Xcode 27 or later.
 2. Select your development team for both targets.
 3. Run `NoiseMeter` on a physical iPhone that allows Live Activities.
-4. Tap **측정 시작** and allow microphone access.
-5. Start the Live Activity to show the current reading outside the app.
+4. Use the settings button to choose the measurement response.
+5. Tap **측정 시작** and allow microphone access.
+6. Start the Live Activity to show the current reading outside the app.
 
 Live Activities must be enabled for the app in iOS Settings. CarPlay decides placement and refresh timing on the Dashboard.
 

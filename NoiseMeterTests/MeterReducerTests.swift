@@ -11,11 +11,13 @@ struct MeterReducerTests {
             state: &state,
             action: .appeared(
                 isLiveActivityRunning: false,
-                microphonePermission: .granted
+                microphonePermission: .granted,
+                preferences: .default
             )
         )
 
         #expect(state.microphonePermission == .granted)
+        #expect(state.preferences == .default)
         #expect(effect == .none)
     }
 
@@ -33,7 +35,8 @@ struct MeterReducerTests {
             state: &state,
             action: .appeared(
                 isLiveActivityRunning: true,
-                microphonePermission: .granted
+                microphonePermission: .granted,
+                preferences: .default
             )
         )
 
@@ -264,6 +267,61 @@ struct MeterReducerTests {
     }
 
     @Test
+    func fastResponseReactsMoreQuicklyThanStableResponse() throws {
+        var fastProcessor = NoiseMeasurementProcessor(response: .fast)
+        var stableProcessor = NoiseMeasurementProcessor(response: .stable)
+
+        _ = fastProcessor.process(
+            SoundLevelSample(decibelsA: 40, duration: 0.1)
+        )
+        _ = stableProcessor.process(
+            SoundLevelSample(decibelsA: 40, duration: 0.1)
+        )
+
+        let fastResult = fastProcessor.process(
+            SoundLevelSample(decibelsA: 80, duration: 0.1)
+        )
+        let stableResult = stableProcessor.process(
+            SoundLevelSample(decibelsA: 80, duration: 0.1)
+        )
+        let fastReading = try #require(fastResult)
+        let stableReading = try #require(stableResult)
+
+        #expect(fastReading.current > stableReading.current)
+        #expect(fastReading.current < 80)
+        #expect(stableReading.current > 40)
+    }
+
+    @Test
+    func changingMeasurementResponseWhileStoppedUpdatesPreference() {
+        var state = MeterState(preferences: .default)
+
+        let effect = MeterReducer.reduce(
+            state: &state,
+            action: .measurementResponseChanged(.fast)
+        )
+
+        #expect(state.preferences.measurementResponse == .fast)
+        #expect(effect == .none)
+    }
+
+    @Test
+    func changingMeasurementResponseWhileMeasuringIsIgnored() {
+        var state = MeterState(
+            preferences: .default,
+            isMeasuring: true
+        )
+
+        let effect = MeterReducer.reduce(
+            state: &state,
+            action: .measurementResponseChanged(.fast)
+        )
+
+        #expect(state.preferences.measurementResponse == .stable)
+        #expect(effect == .none)
+    }
+
+    @Test
     func liveActivityMaximumKeepsItsExistingCodingKey() throws {
         let state = NoiseActivityAttributes.ContentState(
             reading: .preview,
@@ -424,6 +482,23 @@ struct MeterReducerTests {
         )
 
         #expect(effect == .endLiveActivity)
+    }
+
+    @Test
+    @MainActor
+    func measurementResponsePreferencePersistsAcrossClientInstances() throws {
+        let suiteName = "MeterReducerTests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let client = SystemMeterPreferencesClient(defaults: defaults)
+        #expect(client.load() == .default)
+
+        let expected = MeterPreferences(measurementResponse: .fast)
+        client.save(expected)
+
+        let reloadedClient = SystemMeterPreferencesClient(defaults: defaults)
+        #expect(reloadedClient.load() == expected)
     }
 }
 

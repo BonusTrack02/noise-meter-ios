@@ -1,9 +1,14 @@
 import Foundation
 
 struct NoiseMeasurementProcessor: Equatable, Sendable {
+    private let response: MeasurementResponse
     private(set) var reading = NoiseReading.zero
     private(set) var sampleCount = 0
     private var laeqAccumulator = LAeqAccumulator()
+
+    init(response: MeasurementResponse = .stable) {
+        self.response = response
+    }
 
     var measuredDuration: TimeInterval {
         laeqAccumulator.measuredDuration
@@ -15,7 +20,8 @@ struct NoiseMeasurementProcessor: Equatable, Sendable {
         reading = reading.addingMeasurement(
             sample,
             previousSampleCount: sampleCount,
-            laeq: laeq
+            laeq: laeq,
+            response: response
         )
         sampleCount += 1
         return reading
@@ -48,8 +54,15 @@ struct MeasurementDisplayCadence: Equatable, Sendable {
     }
 }
 
+struct MeterPreferences: Equatable, Sendable {
+    var measurementResponse: MeasurementResponse
+
+    static let `default` = MeterPreferences(measurementResponse: .stable)
+}
+
 struct MeterState: Equatable, Sendable {
     var reading = NoiseReading.zero
+    var preferences = MeterPreferences.default
     var measurementSampleCount = 0
     var isMeasuring = false
     var isStartingMeasurement = false
@@ -61,6 +74,10 @@ struct MeterState: Equatable, Sendable {
     var isMicrophoneSettingsAlertPresented = false
     var measurementErrorMessage: String?
     var errorMessage: String?
+
+    var isMeasurementConfigurationLocked: Bool {
+        isMeasuring || isStartingMeasurement || isStoppingMeasurement
+    }
 }
 
 enum MicrophonePermission: Equatable, Sendable {
@@ -72,8 +89,10 @@ enum MicrophonePermission: Equatable, Sendable {
 enum MeterAction: Equatable, Sendable {
     case appeared(
         isLiveActivityRunning: Bool,
-        microphonePermission: MicrophonePermission
+        microphonePermission: MicrophonePermission,
+        preferences: MeterPreferences
     )
+    case measurementResponseChanged(MeasurementResponse)
     case measurementButtonTapped
     case microphonePermissionUpdated(MicrophonePermission)
     case microphoneSettingsAlertDismissed
@@ -102,9 +121,10 @@ enum MeterEffect: Equatable, Sendable {
 enum MeterReducer {
     static func reduce(state: inout MeterState, action: MeterAction) -> MeterEffect {
         switch action {
-        case let .appeared(isRunning, microphonePermission):
+        case let .appeared(isRunning, microphonePermission, preferences):
             state.isLiveActivityRunning = isRunning
             state.microphonePermission = microphonePermission
+            state.preferences = preferences
             if microphonePermission != .granted {
                 let shouldStopMeasurement = state.isMeasuring || state.isStartingMeasurement
                 state.isMeasuring = false
@@ -114,6 +134,13 @@ enum MeterReducer {
                     ? .stopMeasurement(endLiveActivity: state.isLiveActivityRunning)
                     : .none
             }
+            return .none
+
+        case let .measurementResponseChanged(response):
+            guard !state.isMeasurementConfigurationLocked else {
+                return .none
+            }
+            state.preferences.measurementResponse = response
             return .none
 
         case .measurementButtonTapped:
