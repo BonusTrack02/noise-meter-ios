@@ -11,7 +11,6 @@ struct MeterView: View {
                 VStack(spacing: 28) {
                     readingCard
                     measurementControl
-                    liveActivityControl
                 }
                 .padding(20)
             }
@@ -31,10 +30,8 @@ struct MeterView: View {
             await store.synchronize()
         }
         .onChange(of: scenePhase) { _, newPhase in
-            guard newPhase == .active else { return }
-
             Task {
-                await store.synchronize()
+                await handleScenePhase(newPhase)
             }
         }
         .alert(
@@ -112,23 +109,6 @@ struct MeterView: View {
                     .foregroundStyle(.red)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
-        }
-    }
-
-    private var liveActivityControl: some View {
-        VStack(spacing: 12) {
-            Button {
-                Task { await store.send(.liveActivityButtonTapped) }
-            } label: {
-                Label(
-                    store.state.isLiveActivityRunning ? "Live Activity 종료" : "Live Activity 시작",
-                    systemImage: store.state.isLiveActivityRunning ? "stop.circle.fill" : "play.circle.fill"
-                )
-                .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .disabled(!store.state.isMeasuring && !store.state.isLiveActivityRunning)
 
             if let errorMessage = store.state.errorMessage {
                 Text(errorMessage)
@@ -209,6 +189,20 @@ struct MeterView: View {
         guard store.state.measurementSampleCount > 0 else { return "--" }
         return value.formatted(.number.precision(.fractionLength(0)))
     }
+
+    private func handleScenePhase(_ phase: ScenePhase) async {
+        switch phase {
+        case .active:
+            await store.synchronize()
+            await store.send(.appLifecyclePhaseChanged(.active))
+        case .inactive:
+            await store.send(.appLifecyclePhaseChanged(.inactive))
+        case .background:
+            await store.send(.appLifecyclePhaseChanged(.background))
+        @unknown default:
+            await store.send(.appLifecyclePhaseChanged(.inactive))
+        }
+    }
 }
 
 private struct SettingsView: View {
@@ -246,6 +240,31 @@ private struct SettingsView: View {
                         Text("측정 중에는 변경할 수 없습니다.")
                     }
                 }
+            }
+
+            Section {
+                Toggle(
+                    "백그라운드 측정",
+                    isOn: Binding(
+                        get: {
+                            store.state.preferences.isBackgroundMeasurementEnabled
+                        },
+                        set: { isEnabled in
+                            Task {
+                                await store.send(
+                                    .backgroundMeasurementPreferenceChanged(isEnabled)
+                                )
+                            }
+                        }
+                    )
+                )
+                .disabled(store.state.isMeasurementConfigurationLocked)
+            } footer: {
+                Text(
+                    store.state.isMeasurementConfigurationLocked
+                        ? "측정 중에는 변경할 수 없습니다. 측정을 중지한 뒤 변경해 주세요."
+                        : "켜면 측정 시작과 함께 Live Activity가 실행되고 백그라운드에서도 측정을 계속합니다."
+                )
             }
         }
         .navigationTitle("설정")

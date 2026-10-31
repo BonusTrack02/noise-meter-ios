@@ -175,6 +175,9 @@ struct MeterReducerTests {
     func startingMeasurementResetsPreviousReadings() {
         var state = MeterState(
             reading: .preview,
+            preferences: MeterPreferences(
+                isBackgroundMeasurementEnabled: false
+            ),
             measurementSampleCount: 10,
             isStartingMeasurement: true,
             microphonePermission: .granted
@@ -322,6 +325,22 @@ struct MeterReducerTests {
     }
 
     @Test
+    func changingBackgroundPreferenceWhileMeasuringIsIgnored() {
+        var state = MeterState(
+            preferences: .default,
+            isMeasuring: true
+        )
+
+        let effect = MeterReducer.reduce(
+            state: &state,
+            action: .backgroundMeasurementPreferenceChanged(false)
+        )
+
+        #expect(state.preferences.isBackgroundMeasurementEnabled)
+        #expect(effect == .none)
+    }
+
+    @Test
     func liveActivityMaximumKeepsItsExistingCodingKey() throws {
         let state = NoiseActivityAttributes.ContentState(
             reading: .preview,
@@ -350,15 +369,19 @@ struct MeterReducerTests {
     }
 
     @Test
-    func startingLiveActivityUsesCurrentReading() {
-        var state = MeterState()
+    func turningOffBackgroundMeasurementEndsRunningLiveActivity() {
+        var state = MeterState(
+            preferences: .default,
+            isLiveActivityRunning: true
+        )
 
         let effect = MeterReducer.reduce(
             state: &state,
-            action: .liveActivityButtonTapped
+            action: .backgroundMeasurementPreferenceChanged(false)
         )
 
-        #expect(effect == .startLiveActivity(.zero))
+        #expect(!state.preferences.isBackgroundMeasurementEnabled)
+        #expect(effect == .endLiveActivity)
     }
 
     @Test
@@ -473,20 +496,85 @@ struct MeterReducerTests {
     }
 
     @Test
-    func stoppingLiveActivityProducesEndEffect() {
-        var state = MeterState(isLiveActivityRunning: true)
+    func startingMeasurementStartsLiveActivityWhenBackgroundMeasurementIsEnabled() {
+        var state = MeterState(
+            isStartingMeasurement: true,
+            microphonePermission: .granted
+        )
 
         let effect = MeterReducer.reduce(
             state: &state,
-            action: .liveActivityButtonTapped
+            action: .measurementStarted
         )
 
-        #expect(effect == .endLiveActivity)
+        #expect(effect == .startLiveActivity(.zero))
+    }
+
+    @Test
+    func startingMeasurementSkipsLiveActivityWhenBackgroundMeasurementIsDisabled() {
+        var state = MeterState(
+            preferences: MeterPreferences(
+                isBackgroundMeasurementEnabled: false
+            ),
+            isStartingMeasurement: true,
+            microphonePermission: .granted
+        )
+
+        let effect = MeterReducer.reduce(
+            state: &state,
+            action: .measurementStarted
+        )
+
+        #expect(effect == .none)
+    }
+
+    @Test
+    func backgroundPausesMeasurementWhenDisabledInSettings() {
+        var state = MeterState(
+            preferences: MeterPreferences(
+                isBackgroundMeasurementEnabled: false
+            ),
+            isMeasuring: true,
+            microphonePermission: .granted
+        )
+
+        let pauseEffect = MeterReducer.reduce(
+            state: &state,
+            action: .appLifecyclePhaseChanged(.background)
+        )
+
+        #expect(state.isMeasurementPausedForBackground)
+        #expect(pauseEffect == .pauseMeasurement)
+
+        let resumeEffect = MeterReducer.reduce(
+            state: &state,
+            action: .appLifecyclePhaseChanged(.active)
+        )
+
+        #expect(!state.isMeasurementPausedForBackground)
+        #expect(resumeEffect == .resumeMeasurement)
+    }
+
+    @Test
+    func backgroundKeepsMeasurementRunningWhenEnabledInSettings() {
+        var state = MeterState(
+            preferences: .default,
+            isMeasuring: true,
+            microphonePermission: .granted
+        )
+
+        let effect = MeterReducer.reduce(
+            state: &state,
+            action: .appLifecyclePhaseChanged(.background)
+        )
+
+        #expect(!state.isMeasurementPausedForBackground)
+        #expect(effect == .none)
     }
 
     @Test
     @MainActor
-    func measurementResponsePreferencePersistsAcrossClientInstances() throws {
+    func preferencesPersistAcrossClientInstances() throws {
         let suiteName = "MeterReducerTests.\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suiteName))
         defer { defaults.removePersistentDomain(forName: suiteName) }
@@ -494,7 +582,10 @@ struct MeterReducerTests {
         let client = SystemMeterPreferencesClient(defaults: defaults)
         #expect(client.load() == .default)
 
-        let expected = MeterPreferences(measurementResponse: .fast)
+        let expected = MeterPreferences(
+            isBackgroundMeasurementEnabled: false,
+            measurementResponse: .fast
+        )
         client.save(expected)
 
         let reloadedClient = SystemMeterPreferencesClient(defaults: defaults)

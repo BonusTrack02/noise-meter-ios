@@ -22,7 +22,8 @@ The app now includes its first on-device measurement path:
 - Calculate session LAeq from time-weighted acoustic energy.
 - Track and display the session minimum and maximum from the same response-smoothed levels.
 - Process every audio buffer while publishing meter UI snapshots ten times per second.
-- Keep an active microphone measurement running while the app is in the background.
+- Configure background measurement from a dedicated settings screen, with Live Activity following it automatically.
+- Keep an active microphone measurement running in the background, or pause and resume it without resetting session statistics.
 - Update the Live Activity from real microphone readings on a coalesced cadence.
 - Provide Lock Screen, Dynamic Island, and supplemental small-family layouts used by CarPlay.
 
@@ -33,9 +34,9 @@ The displayed dBA and LAeq values use a fixed calibration offset. They are estim
 1. Open `NoiseMeter.xcodeproj` in Xcode 27 or later.
 2. Select your development team for both targets.
 3. Run `NoiseMeter` on a physical iPhone that allows Live Activities.
-4. Use the settings button to choose the measurement response.
+4. Use the settings button to choose the measurement response and background behavior.
 5. Tap **측정 시작** and allow microphone access.
-6. Start the Live Activity to show the current reading outside the app.
+6. When background measurement is enabled, the Live Activity starts automatically with the measurement.
 
 Live Activities must be enabled for the app in iOS Settings. CarPlay decides placement and refresh timing on the Dashboard.
 

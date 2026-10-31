@@ -175,6 +175,7 @@ protocol MeterPreferencesClient: AnyObject {
 @MainActor
 final class SystemMeterPreferencesClient: MeterPreferencesClient {
     private enum Key {
+        static let backgroundMeasurementEnabled = "settings.backgroundMeasurementEnabled"
         static let measurementResponse = "settings.measurementResponse"
     }
 
@@ -184,6 +185,7 @@ final class SystemMeterPreferencesClient: MeterPreferencesClient {
         self.defaults = defaults
         defaults.register(
             defaults: [
+                Key.backgroundMeasurementEnabled: MeterPreferences.default.isBackgroundMeasurementEnabled,
                 Key.measurementResponse: MeterPreferences.default.measurementResponse.rawValue
             ]
         )
@@ -191,6 +193,9 @@ final class SystemMeterPreferencesClient: MeterPreferencesClient {
 
     func load() -> MeterPreferences {
         MeterPreferences(
+            isBackgroundMeasurementEnabled: defaults.bool(
+                forKey: Key.backgroundMeasurementEnabled
+            ),
             measurementResponse: MeasurementResponse(
                 rawValue: defaults.string(forKey: Key.measurementResponse) ?? ""
             ) ?? .stable
@@ -198,6 +203,10 @@ final class SystemMeterPreferencesClient: MeterPreferencesClient {
     }
 
     func save(_ preferences: MeterPreferences) {
+        defaults.set(
+            preferences.isBackgroundMeasurementEnabled,
+            forKey: Key.backgroundMeasurementEnabled
+        )
         defaults.set(
             preferences.measurementResponse.rawValue,
             forKey: Key.measurementResponse
@@ -242,8 +251,12 @@ final class MeterStore {
     func send(_ action: MeterAction) async {
         let effect = MeterReducer.reduce(state: &state, action: action)
 
-        if case .measurementResponseChanged = action {
+        switch action {
+        case .backgroundMeasurementPreferenceChanged,
+             .measurementResponseChanged:
             preferencesClient.save(state.preferences)
+        default:
+            break
         }
 
         switch effect {
@@ -262,19 +275,7 @@ final class MeterStore {
                 let measurements = try await microphoneMeter.start()
                 resetMeasurementProcessing()
                 await send(.measurementStarted)
-
-                measurementTask?.cancel()
-                measurementTask = Task { [weak self] in
-                    for await sample in measurements {
-                        guard !Task.isCancelled else { break }
-                        await self?.processMeasurement(sample)
-                    }
-
-                    guard !Task.isCancelled else { return }
-                    await self?.publishLatestMeasurement()
-                    guard !Task.isCancelled else { return }
-                    await self?.send(.measurementStopped)
-                }
+                observeMeasurements(measurements)
             } catch {
                 await microphoneMeter.stop()
                 await send(.measurementFailed(error.localizedDescription))
@@ -290,6 +291,21 @@ final class MeterStore {
             if endLiveActivity {
                 await liveActivity.end()
                 await send(.liveActivityEnded)
+            }
+
+        case .pauseMeasurement:
+            measurementTask?.cancel()
+            measurementTask = nil
+            await publishLatestMeasurement()
+            await microphoneMeter.stop()
+
+        case .resumeMeasurement:
+            do {
+                let measurements = try await microphoneMeter.start()
+                observeMeasurements(measurements)
+            } catch {
+                await microphoneMeter.stop()
+                await send(.measurementFailed(error.localizedDescription))
             }
 
         case let .startLiveActivity(reading):
@@ -326,6 +342,23 @@ final class MeterStore {
         measurementDisplayCadence = MeasurementDisplayCadence(
             interval: measurementDisplayInterval
         )
+    }
+
+    private func observeMeasurements(
+        _ measurements: AsyncStream<SoundLevelSample>
+    ) {
+        measurementTask?.cancel()
+        measurementTask = Task { [weak self] in
+            for await sample in measurements {
+                guard !Task.isCancelled else { break }
+                await self?.processMeasurement(sample)
+            }
+
+            guard !Task.isCancelled else { return }
+            await self?.publishLatestMeasurement()
+            guard !Task.isCancelled else { return }
+            await self?.send(.measurementStopped)
+        }
     }
 
     private func processMeasurement(_ sample: SoundLevelSample) async {

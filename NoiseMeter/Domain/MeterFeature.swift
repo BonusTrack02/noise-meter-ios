@@ -55,18 +55,30 @@ struct MeasurementDisplayCadence: Equatable, Sendable {
 }
 
 struct MeterPreferences: Equatable, Sendable {
-    var measurementResponse: MeasurementResponse
+    var isBackgroundMeasurementEnabled: Bool
+    var measurementResponse: MeasurementResponse = .stable
 
-    static let `default` = MeterPreferences(measurementResponse: .stable)
+    static let `default` = MeterPreferences(
+        isBackgroundMeasurementEnabled: true,
+        measurementResponse: .stable
+    )
+}
+
+enum AppLifecyclePhase: Equatable, Sendable {
+    case active
+    case inactive
+    case background
 }
 
 struct MeterState: Equatable, Sendable {
     var reading = NoiseReading.zero
     var preferences = MeterPreferences.default
+    var appLifecyclePhase: AppLifecyclePhase = .active
     var measurementSampleCount = 0
     var isMeasuring = false
     var isStartingMeasurement = false
     var isStoppingMeasurement = false
+    var isMeasurementPausedForBackground = false
     var isMeasurementStartPending = false
     var isLiveActivityRunning = false
     var microphonePermission: MicrophonePermission = .undetermined
@@ -92,6 +104,8 @@ enum MeterAction: Equatable, Sendable {
         microphonePermission: MicrophonePermission,
         preferences: MeterPreferences
     )
+    case appLifecyclePhaseChanged(AppLifecyclePhase)
+    case backgroundMeasurementPreferenceChanged(Bool)
     case measurementResponseChanged(MeasurementResponse)
     case measurementButtonTapped
     case microphonePermissionUpdated(MicrophonePermission)
@@ -101,7 +115,6 @@ enum MeterAction: Equatable, Sendable {
     case measurementStopped
     case measurementUpdated(reading: NoiseReading, sampleCount: Int)
     case measurementFailed(String)
-    case liveActivityButtonTapped
     case liveActivityStarted
     case liveActivityEnded
     case liveActivityFailed(String)
@@ -113,6 +126,8 @@ enum MeterEffect: Equatable, Sendable {
     case openApplicationSettings
     case startMeasurement
     case stopMeasurement(endLiveActivity: Bool)
+    case pauseMeasurement
+    case resumeMeasurement
     case startLiveActivity(NoiseReading)
     case updateLiveActivity(NoiseReading)
     case endLiveActivity
@@ -130,11 +145,52 @@ enum MeterReducer {
                 state.isMeasuring = false
                 state.isStartingMeasurement = false
                 state.isStoppingMeasurement = false
+                state.isMeasurementPausedForBackground = false
                 return shouldStopMeasurement
                     ? .stopMeasurement(endLiveActivity: state.isLiveActivityRunning)
                     : .none
             }
+            if !state.preferences.isBackgroundMeasurementEnabled,
+               state.isLiveActivityRunning {
+                return .endLiveActivity
+            }
             return .none
+
+        case let .appLifecyclePhaseChanged(phase):
+            state.appLifecyclePhase = phase
+            switch phase {
+            case .active:
+                guard state.isMeasuring,
+                      state.isMeasurementPausedForBackground
+                else {
+                    return .none
+                }
+                state.isMeasurementPausedForBackground = false
+                return .resumeMeasurement
+
+            case .inactive:
+                return .none
+
+            case .background:
+                guard state.isMeasuring,
+                      !state.isStoppingMeasurement,
+                      !state.isMeasurementPausedForBackground,
+                      !state.preferences.isBackgroundMeasurementEnabled
+                else {
+                    return .none
+                }
+                state.isMeasurementPausedForBackground = true
+                return .pauseMeasurement
+            }
+
+        case let .backgroundMeasurementPreferenceChanged(isEnabled):
+            guard !state.isMeasurementConfigurationLocked else {
+                return .none
+            }
+            state.preferences.isBackgroundMeasurementEnabled = isEnabled
+            guard !isEnabled else { return .none }
+
+            return state.isLiveActivityRunning ? .endLiveActivity : .none
 
         case let .measurementResponseChanged(response):
             guard !state.isMeasurementConfigurationLocked else {
@@ -197,12 +253,16 @@ enum MeterReducer {
             state.measurementSampleCount = 0
             state.isStartingMeasurement = false
             state.isStoppingMeasurement = false
+            state.isMeasurementPausedForBackground = false
             state.isMeasuring = true
-            return .none
+            return state.preferences.isBackgroundMeasurementEnabled
+                ? .startLiveActivity(state.reading)
+                : .none
 
         case .measurementStopped:
             state.isStartingMeasurement = false
             state.isStoppingMeasurement = false
+            state.isMeasurementPausedForBackground = false
             state.isMeasuring = false
             return .none
 
@@ -216,15 +276,10 @@ enum MeterReducer {
         case let .measurementFailed(message):
             state.isStartingMeasurement = false
             state.isStoppingMeasurement = false
+            state.isMeasurementPausedForBackground = false
             state.isMeasuring = false
             state.measurementErrorMessage = message
             return .none
-
-        case .liveActivityButtonTapped:
-            state.errorMessage = nil
-            return state.isLiveActivityRunning
-                ? .endLiveActivity
-                : .startLiveActivity(state.reading)
 
         case .liveActivityStarted:
             state.isLiveActivityRunning = true
