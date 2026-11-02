@@ -75,6 +75,7 @@ struct MeterState: Equatable, Sendable {
     var preferences = MeterPreferences.default
     var appLifecyclePhase: AppLifecyclePhase = .active
     var measurementSampleCount = 0
+    var measuredDuration: TimeInterval = 0
     var isMeasuring = false
     var isStartingMeasurement = false
     var isStoppingMeasurement = false
@@ -113,7 +114,11 @@ enum MeterAction: Equatable, Sendable {
     case openApplicationSettingsButtonTapped
     case measurementStarted
     case measurementStopped
-    case measurementUpdated(reading: NoiseReading, sampleCount: Int)
+    case measurementUpdated(
+        reading: NoiseReading,
+        sampleCount: Int,
+        measuredDuration: TimeInterval
+    )
     case measurementFailed(String)
     case liveActivityStarted
     case liveActivityEnded
@@ -251,6 +256,7 @@ enum MeterReducer {
         case .measurementStarted:
             state.reading = .zero
             state.measurementSampleCount = 0
+            state.measuredDuration = 0
             state.isStartingMeasurement = false
             state.isStoppingMeasurement = false
             state.isMeasurementPausedForBackground = false
@@ -266,10 +272,11 @@ enum MeterReducer {
             state.isMeasuring = false
             return .none
 
-        case let .measurementUpdated(reading, sampleCount):
+        case let .measurementUpdated(reading, sampleCount, measuredDuration):
             guard state.isMeasuring else { return .none }
             state.reading = reading
             state.measurementSampleCount = sampleCount
+            state.measuredDuration = measuredDuration
             guard state.isLiveActivityRunning else { return .none }
             return .updateLiveActivity(state.reading)
 

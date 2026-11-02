@@ -372,7 +372,8 @@ final class MeterStore {
         await send(
             .measurementUpdated(
                 reading: reading,
-                sampleCount: measurementProcessor.sampleCount
+                sampleCount: measurementProcessor.sampleCount,
+                measuredDuration: measurementProcessor.measuredDuration
             )
         )
     }
@@ -385,7 +386,8 @@ final class MeterStore {
         await send(
             .measurementUpdated(
                 reading: measurementProcessor.reading,
-                sampleCount: measurementProcessor.sampleCount
+                sampleCount: measurementProcessor.sampleCount,
+                measuredDuration: measurementProcessor.measuredDuration
             )
         )
     }

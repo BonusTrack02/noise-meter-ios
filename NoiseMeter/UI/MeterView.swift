@@ -1,3 +1,4 @@
+import Foundation
 import SwiftUI
 
 struct MeterView: View {
@@ -71,6 +72,15 @@ struct MeterView: View {
             Text(measurementStatusTitle)
                 .font(.headline)
                 .foregroundStyle(measurementStatusColor)
+
+            if store.state.isMeasuring || store.state.measurementSampleCount > 0 {
+                Label(
+                    "측정 시간 \(measurementDurationText)",
+                    systemImage: "clock"
+                )
+                .font(.subheadline.monospacedDigit())
+                .foregroundStyle(.secondary)
+            }
 
             HStack {
                 metric(title: "최소 dBA", value: store.state.reading.minimum)
@@ -147,6 +157,14 @@ struct MeterView: View {
 
     private var measurementStatusColor: Color {
         store.state.measurementSampleCount > 0 ? bandColor : .secondary
+    }
+
+    private var measurementDurationText: String {
+        let totalSeconds = max(Int(store.state.measuredDuration), 0)
+        let hours = totalSeconds / 3_600
+        let minutes = (totalSeconds % 3_600) / 60
+        let seconds = totalSeconds % 60
+        return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
     }
 
     private var measurementButtonTitle: String {

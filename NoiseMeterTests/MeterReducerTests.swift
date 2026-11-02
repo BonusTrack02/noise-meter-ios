@@ -179,6 +179,7 @@ struct MeterReducerTests {
                 isBackgroundMeasurementEnabled: false
             ),
             measurementSampleCount: 10,
+            measuredDuration: 120,
             isStartingMeasurement: true,
             microphonePermission: .granted
         )
@@ -190,6 +191,7 @@ struct MeterReducerTests {
 
         #expect(state.reading == .zero)
         #expect(state.measurementSampleCount == 0)
+        #expect(state.measuredDuration == 0)
         #expect(state.isMeasuring)
         #expect(!state.isStartingMeasurement)
         #expect(effect == .none)
@@ -211,7 +213,8 @@ struct MeterReducerTests {
                     laeq: 68,
                     maximum: 74
                 ),
-                sampleCount: 1
+                sampleCount: 1,
+                measuredDuration: 1.25
             )
         )
 
@@ -224,6 +227,7 @@ struct MeterReducerTests {
             )
         )
         #expect(state.measurementSampleCount == 1)
+        #expect(state.measuredDuration == 1.25)
         #expect(effect == .none)
     }
 
@@ -401,7 +405,8 @@ struct MeterReducerTests {
                     laeq: 82,
                     maximum: 90
                 ),
-                sampleCount: 12
+                sampleCount: 12,
+                measuredDuration: 3.5
             )
         )
 
